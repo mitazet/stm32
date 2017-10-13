@@ -1,4 +1,4 @@
-# Minimal makefile for STM32F3 Discovery board.
+# Minimal makefile for STM32F3 Neucleo board.
 TARGET := arm-none-eabi
 
 # Find the devtools
