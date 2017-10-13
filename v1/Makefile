@@ -18,7 +18,7 @@ HEY := $(shell { which hey || echo \\\# ; } 2>/dev/null)
 
 CFLAGS = -g3 -mcpu=cortex-m4 -mthumb -nostdlib -Isrc -Os -ffunction-sections -fdata-sections -Wl,--gc-sections -std=c99
 OBJECTS = startup.o main.o printf.o
-MEMORYMAP = STM32F303K8Tx_FLASH.ld
+MEMORYMAP = STM32F303K8.ld
 OBJECTNAME = STM
 
 $(OBJECTNAME).bin: $(OBJECTNAME).out
