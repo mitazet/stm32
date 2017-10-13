@@ -43,8 +43,8 @@ stm32flash: $(OBJECTNAME).bin
 	$(STM32FLASH) -v -w $^ $(PORT)
 	$(HEY) SerialConnect set port to $(basename $(PORT))
 
-st-flash: a.bin
-	$(STFLASH) write a.bin 0x8000000
+st-flash: $(OBJECTNAME).bin
+	$(STFLASH) write $(OBJCTNAME).bin 0x8000000
 
 clean:
 	rm *.o *.out *.bin
