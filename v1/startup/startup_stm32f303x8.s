@@ -73,45 +73,43 @@ defined in linker script */
 */
 
     .section	.text.Reset_Handler
-	.weak	Reset_Handler				/*他のソースでReset_Handlerが公開されない場合のみ、Reset_Handlerを公開 */
-	.type	Reset_Handler, %function	/*Reset_Handerの型を指定(→function)*/
+	.weak	Reset_Handler
+	.type	Reset_Handler, %function
 Reset_Handler:
   ldr   sp, =_estack    /* Atollic update: set stack pointer */
 
 /* Copy the data segment initializers from flash to SRAM */
-/* data segmentは初期値を持つ大域変数のためSRAMにコピー */
-  movs	r1, #0			/* 0をr1にMove */
-  b	LoopCopyDataInit	/* LoopCopyDataInitに分岐 */
+  movs	r1, #0
+  b	LoopCopyDataInit
 
 CopyDataInit:
-	ldr	r3, =_sidata	/* r3に_sidataのアドレスを代入 */
-	ldr	r3, [r3, r1]	/* r3 = (r3 + r1)の内容 */
-	str	r3, [r0, r1]	/* (r0 + r1)の内容 = r3 →idataの内容をdataにコピー*/
-	adds	r1, r1, #4	/* r1 = r1 + 4 →アドレスを次に進める*/
-
+	ldr	r3, =_sidata
+	ldr	r3, [r3, r1]
+	str	r3, [r0, r1]
+	adds	r1, r1, #4
 LoopCopyDataInit:
-	ldr	r0, =_sdata		/* r0に_sdataのアドレスを代入 */
-	ldr	r3, =_edata		/* r3に_edataのアドレスを代入 */
-	adds	r2, r0, r1	/* r2 = r0 + r1 */
-	cmp	r2, r3			/* r2とr3を比較 */
-	bcc	CopyDataInit	/* キャリーフラグが0の時、CopyDataInitへjump →r2がedataに達するまでコピーを繰り返す*/
-	ldr	r2, =_sbss		/* r2に_sbssのアドレスを代入 */
-	b	LoopFillZerobss	/* LoopFillZerobssに分岐 */
+	ldr	r0, =_sdata
+	ldr	r3, =_edata
+	adds	r2, r0, r1
+	cmp	r2, r3		
+	bcc	CopyDataInit
+	ldr	r2, =_sbss
+	b	LoopFillZerobss
 
 /* Zero fill the bss segment. */
 FillZerobss:
-	movs	r3, #0		/* r3に0を代入 */
-	str	r3, [r2], #4	/* r2の内容にr3(0)を代入しr2を次のアドレスへ進める*/
+	movs	r3, #0
+	str	r3, [r2], #4
 
 LoopFillZerobss:
-	ldr	r3, = _ebss		/* r3に_ebssのアドレスを代入 */
-	cmp	r2, r3			/* r2とr3を比較 */
-	bcc	FillZerobss		/* キャリーフラグが0の時、FillZerobssへjump ->r2がebssに達するまでコピーを繰り返す */
+	ldr	r3, = _ebss
+	cmp	r2, r3
+    bcc	FillZerobss
 
 /* Call the clock system intitialization function.*/
     bl  SystemInit
 /* Call static constructors */
-    bl __libc_init_array
+    /* bl __libc_init_array */
 /* Call the application's entry point.*/
 	bl	main
 
@@ -128,7 +126,7 @@ LoopForever:
  * @param  None
  * @retval : None
 */
-    .section	.text.Default_Handler,"ax",%progbits /*progbits:コード、データ、デバッグ情報などのプログラムの内容*/
+    .section	.text.Default_Handler,"ax",%progbits
 Default_Handler:
 Infinite_Loop:
 	b	Infinite_Loop
