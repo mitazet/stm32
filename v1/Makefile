@@ -16,11 +16,35 @@ PORT := $(shell { ls /dev/ttyACM0 || ls /dev/ports/usb0; } 2>/dev/null)
 HEY := $(shell { which hey || echo \\\# ; } 2>/dev/null)
 
 CFLAGS = -g3 -mcpu=cortex-m4 -mthumb -nostdlib -Os -ffunction-sections -fdata-sections -Wl,--gc-sections -std=c99
-INCLUDE := -I./cmsis -I./system -I./printf
-OBJDIR := ./obj
-OBJECTS = $(OBJDIR)/startup.o $(OBJDIR)/main.o $(OBJDIR)/printf.o
+INCLUDE = -I./include
+
+OBJDIR = obj
+
+SOURCES = $(shell find * -name "*.c")
+SRCDIR = $(dir $(SOURCES))
+BINDIR = $(addprefix $(OBJDIR)/, $(SRCDIR))
+
+ASMS = $(shell find * -name "*.s")
+ASMDIR = $(dir $(ASMS))
+ASMBIN = $(addprefix $(OBJDIR)/, $(ASMDIR))
+
+OBJECTS = $(addprefix $(OBJDIR)/, $(patsubst %.c, %.o, $(SOURCES))) $(addprefix $(OBJDIR)/, $(patsubst %.s, %.o, $(ASMS))) 
+DEPENDS = $(OBJECTS:.o=.d)
+
+ifeq "$(strip $(OBJDIR))" ""
+	OBJDIR = .
+endif
+
 MEMORYMAP = STM32F303K8.ld
 OBJECTNAME = STM
+
+default :
+	@[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+	@[ -d "$(BINDIR)" ] || mkdir -p $(BINDIR)
+	@[ -d "$(ASMBIN)" ] || mkdir -p $(ASMBIN)
+	@make all --no-print-directory
+
+all: $(OBJECTS) $(OBJECTNAME).out $(OBJECTNAME).bin
 
 $(OBJECTNAME).bin: $(OBJECTNAME).out
 	$(OBJCOPY) $(OBJECTNAME).out -I ihex -O binary $(OBJECTNAME).bin
@@ -28,17 +52,11 @@ $(OBJECTNAME).bin: $(OBJECTNAME).out
 $(OBJECTNAME).out: $(OBJECTS)
 	$(LD) -T $(MEMORYMAP) $(OBJECTS) -L$(LIBGCC) -o $(OBJECTNAME).out
 
-$(OBJDIR)/startup.o:  ./startup/startup_stm32f303x8.s
-	-mkdir -p $(OBJDIR)
+$(OBJDIR)/%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+$(OBJDIR)/%.o: %.s
 	$(AS) -g $< -o $@
-
-$(OBJDIR)/main.o: ./main.c
-	-mkdir -p $(OBJDIR)
-	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
-
-$(OBJDIR)/printf.o:   ./printf/printf.c
-	-mkdir -p $(OBJDIR)
-	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 .PHONY: clean flash
 
@@ -51,4 +69,4 @@ st-flash: $(OBJECTNAME).bin
 	$(STFLASH) write $(OBJECTNAME).bin 0x8000000
 
 clean:
-	rm -f $(OBJECTS) *.out *.bin
+	rm -rf $(OBJDIR) *.out *.bin
