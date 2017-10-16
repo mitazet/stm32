@@ -1,10 +1,4 @@
-#include "stm32f30x.h"
-
-void SystemInit(void)
-{
-	// Under Construction
-	// Call from startup
-}
+#include "stm32f303x8.h"
 
 void ConfigureTIM6(void)
 {
@@ -22,7 +16,6 @@ void ConfigureGPIOB3(void)
     GPIOB->MODER = GPIO_MODER_MODER3_0;
     GPIOB->OTYPER = 0x0000;
     GPIOB->PUPDR = 0x000000000;
-    GPIOB->ODR = GPIO_ODR_3;
 }
 
 // Main -----------------------------------------------------------------------
