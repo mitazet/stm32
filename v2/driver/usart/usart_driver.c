@@ -1,10 +1,10 @@
 // USART ----------------------------------------------------------------------
-#include "usart.h"
+#include "usart_driver.h"
 
-static void EnablePinUSART2(void)
+static void EnablePinUSART(void)
 {
 
-    RCC-> AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+    RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
 
     GPIOA->MODER = 0;
     GPIOA->AFR[0] = 0;
@@ -19,7 +19,7 @@ static void EnablePinUSART2(void)
 	GPIOA->AFR[1] = (GPIOA->AFR[1] & 0x0FFFFFFF) | 0x70000000;
 }
 
-static void ConfigureUSART2(void)
+static void ConfigureUSART(void)
 {
 	// Distribute clock to USART2
 	RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
@@ -31,23 +31,32 @@ static void ConfigureUSART2(void)
 	USART2->CR1 |= USART_CR1_RE | USART_CR1_TE | USART_CR1_UE;
 }
 
-void InitUSART2(void)
+void InitUSART(void)
 {
-	EnablePinUSART2();
-	ConfigureUSART2();
+	EnablePinUSART();
+	ConfigureUSART();
 }
 
-char ReadUSART2(void)
+char ReadUSART(void)
 {
 	// Wait for a char on the UART
 	while (!(USART2->ISR & USART_ISR_RXNE));
 	return USART2->RDR;
 }
 
-void WriteUSART2(char c)
+void WriteUSART(char c)
 {
 	// Wait for a char on the UART
 	while (!(USART2->ISR & USART_ISR_TXE));
 	USART2->TDR = c;
 }
+
+void PutcUSART(char c)
+{
+    if(c == '\n'){
+        WriteUSART('\r');
+    }
+    WriteUSART(c);
+}
+
 
