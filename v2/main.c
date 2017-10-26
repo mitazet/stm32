@@ -5,8 +5,6 @@
 // Main -----------------------------------------------------------------------
 int main(void)
 {
-	char c;
-
     InitUSART();
     
     init_printf(PutcUSART);
