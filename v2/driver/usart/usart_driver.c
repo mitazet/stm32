@@ -3,7 +3,6 @@
 
 static void EnablePinUSART(void)
 {
-
     RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
 
     GPIOA->MODER = 0;
@@ -15,8 +14,8 @@ static void EnablePinUSART(void)
     GPIOA->MODER |= GPIO_MODER_MODER15_1;
 
     // Select AF7 (USART2) for PA2 and PA15
-	GPIOA->AFR[0] = (GPIOA->AFR[0] & 0xFFFFF0FF) | 0x700;
-	GPIOA->AFR[1] = (GPIOA->AFR[1] & 0x0FFFFFFF) | 0x70000000;
+	GPIOA->AFR[0] = 0x00000700;
+	GPIOA->AFR[1] = 0x70000000;
 }
 
 static void ConfigureUSART(void)
