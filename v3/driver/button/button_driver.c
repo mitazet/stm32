@@ -2,15 +2,15 @@
 #include "stm32f303x8.h"
 #include "printf.h"
 
-static void InitEXTI()
+void InitEXTI()
 {
-    SYSCFG->EXTICR[0] = 0x00000001;
-    EXTI->IMR = 0x00000001;
+    SYSCFG->EXTICR[0] = SYSCFG_EXTICR1_EXTI0_PB;
+    EXTI->IMR = EXTI_IMR_MR0;
     EXTI->FTSR = EXTI_FTSR_TR0;
     NVIC_EnableIRQ(EXTI0_IRQn);
 }
 
-static void InitGPIO()
+void InitGPIO()
 {
     // distibute clock
     RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
@@ -22,11 +22,12 @@ static void InitGPIO()
 
 void InitButtonIntr()
 {
-    InitEXTI();
     InitGPIO();
+    InitEXTI();
 }
 
 void EXTI0_IRQHandler()
 {
     printf("pushed\n");
+    EXTI->PR |= EXTI_PR_PR0;
 }
