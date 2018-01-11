@@ -13,6 +13,7 @@ void TimerInit(void)
 	TIM6->CR1 &= ~TIM_CR1_CEN;
 
 	TIM6->DIER &= ~TIM_DIER_UIE;
+	NVIC_DisableIRQ(TIM6_DAC_IRQn);
 	callback = NULL;
 }
 
