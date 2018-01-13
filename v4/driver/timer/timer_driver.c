@@ -2,6 +2,8 @@
 #include "timer_driver.h"
 #include "printf.h"
 
+#define NULL (void*)0
+
 void (*callback)(void);
 
 void TimerInit(void)
@@ -49,11 +51,10 @@ int TimerAdd_sec(int timeout_sec, void (*function)(void))
 		return -1;
 	}
 
-	timeout = timeout_sec; 
 	callback = function;
-	TimerStart_sec(timeout);
+	TimerStart_sec(timeout_sec);
 
-	return 0
+	return 0;
 }
 
 // add timer counting by milliseconds
@@ -64,11 +65,10 @@ int TimerAdd_msec(int timeout_msec, void (*function)(void))
 		return -1;
 	}
 
-	timeout = timeout_msec; 
 	callback = function;
-	TimerStart_msec(timeout);
+	TimerStart_msec(timeout_msec);
 
-	return 0
+	return 0;
 }
 
 void TIM6_DAC1_IRQHandler()
@@ -76,4 +76,6 @@ void TIM6_DAC1_IRQHandler()
 	if(callback != NULL){
 		callback();
 	}
+    
+    TIM6->SR = 0;
 }

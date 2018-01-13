@@ -3,9 +3,9 @@
 
 #include "stm32f303x8.h"
 
-extern void InitUSART(void);
-extern char ReadUSART(void);
-extern void WriteUSART(char c);
-extern void PutcUSART(char c);
+extern void UsartInit(void);
+extern char UsartRead(void);
+extern void UsartWrite(char c);
+extern void UsartPutc(char c);
 
 #endif
