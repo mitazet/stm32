@@ -4,6 +4,8 @@
 #include "xmodem.h"
 #include "elf.h"
 
+extern void _MAIN_CODE_ADDR();
+
 static int dump(char* buf, long size)
 {
     long i;
@@ -37,7 +39,6 @@ static void wait()
 int main(void)
 {
     UsartInit();
-    //init_printf(myputc);
 
     static char buf[16];
     static long size = -1;
@@ -63,7 +64,7 @@ int main(void)
             printf("size: %d\n", size);
             dump(loadbuf, size);
         }else if(!strcmp(buf, "run")){
-            ElfLoad(loadbuf);
+            _MAIN_CODE_ADDR();
         }else{
             printf("unknown.\n");
         }
