@@ -5,7 +5,7 @@ TARGET := arm-none-eabi-
 CC := $(TARGET)gcc
 LD := $(TARGET)ld
 AS := $(TARGET)as
-OBJCOPY := $(TARGET)-objcopy
+OBJCOPY := $(TARGET)objcopy
 STFLASH := st-flash
 PORT := /dev/ttyACM0
 
