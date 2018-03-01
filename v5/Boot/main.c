@@ -2,7 +2,6 @@
 #include "printf.h"
 #include "lib.h"
 #include "xmodem.h"
-#include "elf.h"
 
 extern void _MAIN_CODE_ADDR();
 
@@ -45,7 +44,7 @@ int main(void)
     static unsigned char *loadbuf = NULL;
     extern int _buffer_start;
 
-    printf("zload (zet boot loader) started.\n");
+    printf("zloader started.\n");
 
     while(1){
         printf("zload> ");
