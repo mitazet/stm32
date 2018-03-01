@@ -6,7 +6,7 @@ int main(void)
 // Main -----------------------------------------------------------------------
 int main(void)
 {
-    printf("Hello World.\n");
+    printf("Main Program booted!!\n");
 
     while(1);
 

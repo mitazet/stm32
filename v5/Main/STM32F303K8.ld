@@ -71,14 +71,6 @@ FLASH_MAIN (rx) : ORIGIN = 0x08002000, LENGTH = 56K
 /* Define output sections */
 SECTIONS
 {
-  /* The startup code goes first into FLASH */
-  .isr_vector :
-  {
-    . = ALIGN(4);
-    KEEP(*(.isr_vector)) /* Startup code */
-    . = ALIGN(4);
-  } >FLASH_BOOT
-
   /* Entry Point */
   .entry_point : 
   {
@@ -152,7 +144,7 @@ SECTIONS
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-  } >RAM_CODE
+  } >RAM_WORK
 
   _siccmram = LOADADDR(.ccmram);
 
