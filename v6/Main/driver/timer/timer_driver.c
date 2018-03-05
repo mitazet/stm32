@@ -7,6 +7,8 @@
 
 void (*callback)(void);
 
+void TimerIntrHandler(void) __attribute__ ((interrupt ("IRQ")));
+
 void TimerIntrHandler(void)
 {
 	if(callback != NULL){
