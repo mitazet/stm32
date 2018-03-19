@@ -24,7 +24,7 @@ all: $(OBJECTS) $(TESTNAME)
 	./$(TESTNAME)
 
 $(TESTNAME): $(OBJECTS)
-	g++ -o $(TESTNAME) test_usart.cpp $(GTEST_DIR)/googletest/googletest/src/gtest_main.cc $(GTEST_DIR)/gtest/gtest-all.cc $(INCLUDE) -lpthread $(OBJECTS) 
+	g++ -o $(TESTNAME) test_usart.cpp $(GTEST_DIR)/googletest/googletest/src/gtest_main.cc $(GTEST_DIR)/gmock-gtest-all.cc $(INCLUDE) -lpthread $(OBJECTS) 
 
 $(OBJECTS): $(SRCS)
 	gcc -c $(SRCS) $(INCLUDE)
@@ -33,4 +33,4 @@ clean:
 	rm *.o $(TESTNAME)
 
 gtest-gen:
-	python3 $(GTEST_DIR)/googletest/googletest/scripts/fuse_gtest_files.py $(GTEST_DIR) 
+	python $(GTEST_DIR)/googletest/googlemock/scripts/fuse_gmock_files.py $(GTEST_DIR) 

@@ -56,7 +56,7 @@ long UsartIsReadEnable(void)
 char UsartRead(void)
 {
 	// Wait for a char on the UART
-	while (!(usartAddress->ISR & USART_ISR_RXNE));
+	while (!UsartIsReadEnable());
 	return usartAddress->RDR;
 }
 

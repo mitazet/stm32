@@ -1,5 +1,6 @@
 // テストケース記述ファイル
 #include "gtest/gtest.h" // googleTestを使用するおまじないはこれだけでOK
+#include "gmock/gmock.h"
 // テスト対象関数を呼び出せるようにするのだが
 // extern "C"がないとCと解釈されない、意外とハマりがち。
 extern "C" {
