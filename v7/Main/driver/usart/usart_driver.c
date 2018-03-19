@@ -1,5 +1,6 @@
 // USART ----------------------------------------------------------------------
 #include "usart_driver.h"
+#include "reg_io.h"
 
 static RCC_TypeDef* rccAddress = RCC;
 static GPIO_TypeDef* gpioAddress = GPIOA;
@@ -14,7 +15,6 @@ void UsartCreate(RCC_TypeDef* rcc_addr, GPIO_TypeDef* gpio_addr, USART_TypeDef* 
 
 static void UsartEnablePin(void)
 {
-
     rccAddress->AHBENR |= RCC_AHBENR_GPIOAEN;
 
     gpioAddress->MODER = 0;
@@ -50,20 +50,25 @@ void UsartInit(void)
 
 long UsartIsReadEnable(void)
 {
-   return usartAddress->ISR & USART_ISR_RXNE;
+	return RegRead((uint32_t*)&usartAddress->ISR) & USART_ISR_RXNE;
+}
+
+long UsartIsWriteEnable(void)
+{
+	return RegRead((uint32_t*)&usartAddress->ISR) & USART_ISR_TXE;
 }
 
 char UsartRead(void)
 {
-	// Wait for a char on the UART
-	while (!(usartAddress->ISR & USART_ISR_RXNE));
-	return usartAddress->RDR;
+	// Wait for a char on the USART
+	while (!UsartIsReadEnable());
+	return RegRead((uint32_t*)&usartAddress->RDR);
 }
 
 void UsartWrite(char c)
 {
-	// Wait for a char on the UART
-	while (!(usartAddress->ISR & USART_ISR_TXE));
-	usartAddress->TDR = c;
+	// Wait for a char on the USART
+	while (!UsartIsWriteEnable());
+	return RegWrite((uint32_t*)&usartAddress->TDR, c);
 }
 

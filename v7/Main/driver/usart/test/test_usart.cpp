@@ -1,9 +1,31 @@
 // テストケース記述ファイル
 #include "gtest/gtest.h" // googleTestを使用するおまじないはこれだけでOK
+#include "gmock/gmock.h"
 // テスト対象関数を呼び出せるようにするのだが
 // extern "C"がないとCと解釈されない、意外とハマりがち。
 extern "C" {
 #include "usart_driver.h"
+}
+
+class MockIo{
+	public:
+		MOCK_METHOD1(RegClear, void (uint32_t*));
+		MOCK_METHOD2(RegWrite, void (uint32_t*, uint32_t));
+		MOCK_METHOD3(RegRead, uint32_t (uint32_t*));
+};
+
+MockIo *mock;
+
+void RegClear(uint32_t* address){
+	mock->RegClear(address);
+}
+
+void RegWrite(uint32_t* address, uint32_t data){
+	mock->RegWrite(address, data);
+}
+
+uint32_t RegRead(uint32_t* address){
+	return mock->RegRead(address);
 }
 
 // fixtureNameはテストケース群をまとめるグループ名と考えればよい、任意の文字列
@@ -14,10 +36,12 @@ class UsartTest : public ::testing::Test {
         // この関数を呼ぶ。共通の初期化処理を入れておくとテストコードがすっきりする
         virtual void SetUp()
         {
+			mock = new MockIo();
         }
         // SetUpと同様にテストケース実行後に呼ばれる関数。共通後始末を記述する。
         virtual void TearDown()
         {
+			delete mock;
         }
 };
 
@@ -36,4 +60,12 @@ TEST_F(UsartTest, Init)
     EXPECT_EQ(RCC_APB1ENR_USART2EN, virtualRcc.APB1ENR);
     EXPECT_EQ(8000000L/115200L, virtualUsart.BRR);
     EXPECT_EQ(USART_CR1_RE|USART_CR1_TE|USART_CR1_UE, virtualUsart.CR1);
+}
+
+using ::testing::Return;
+using ::testing::Pointee;
+
+TEST_F(UsartTest, Read)
+{
+	//EXPECT_CALL(*mock, RegRead(::testing::_)).WillOnce(testing::Return(USART_ISR_RXNE));
 }
