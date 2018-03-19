@@ -5,17 +5,19 @@
 // extern "C"がないとCと解釈されない、意外とハマりがち。
 extern "C" {
 #include "usart_driver.h"
+#include "stm32f303x8.h"
 }
 
 class MockIo{
 	public:
-		MOCK_METHOD1(RegClear, void (uint32_t*));
-		MOCK_METHOD2(RegWrite, void (uint32_t*, uint32_t));
-		MOCK_METHOD3(RegRead, uint32_t (uint32_t*));
+		MOCK_METHOD1(RegClear, void (uint32_t* ));
+		MOCK_METHOD2(RegWrite, void (uint32_t*, uint32_t ));
+		MOCK_METHOD1(RegRead, uint32_t (uint32_t* ));
 };
 
 MockIo *mock;
 
+extern "C" {
 void RegClear(uint32_t* address){
 	mock->RegClear(address);
 }
@@ -25,7 +27,8 @@ void RegWrite(uint32_t* address, uint32_t data){
 }
 
 uint32_t RegRead(uint32_t* address){
-	return mock->RegRead(address);
+    return mock->RegRead(address);
+}
 }
 
 // fixtureNameはテストケース群をまとめるグループ名と考えればよい、任意の文字列
@@ -65,7 +68,8 @@ TEST_F(UsartTest, Init)
 using ::testing::Return;
 using ::testing::Pointee;
 
-TEST_F(UsartTest, Read)
+TEST_F(UsartTest, IsReadEnable)
 {
-	//EXPECT_CALL(*mock, RegRead(::testing::_)).WillOnce(testing::Return(USART_ISR_RXNE));
+	EXPECT_CALL(*mock, RegRead(::testing::_)).WillOnce(testing::Return(USART_ISR_RXNE));
+    EXPECT_EQ(USART_ISR_RXNE, UsartIsReadEnable());
 }
