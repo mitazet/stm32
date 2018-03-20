@@ -4,7 +4,7 @@
 # -lpthreadをつけることにも注意。
 # makeかmake allしたらビルドして実行まで行います。
 
-TESTNAME = test_usart
+TESTNAME = test_timer
 
 GTEST_DIR = ../../../../../..
 TEST_DIR = .
@@ -13,14 +13,14 @@ INC_DIR = ../../..
 
 INCLUDE = -I$(GTEST_DIR) -I$(INC_DIR)/include
 
-SRCS = $(CODE_DIR)/usart_driver.c
-OBJECTS = usart_driver.o
+SRCS = $(CODE_DIR)/timer_driver.c
+OBJECTS = timer_driver.o
 
 all: $(OBJECTS) $(TESTNAME)
 	./$(TESTNAME)
 
 $(TESTNAME): $(OBJECTS)
-	g++ -o $(TESTNAME) test_usart.cpp $(GTEST_DIR)/googletest/googletest/src/gtest_main.cc $(GTEST_DIR)/gmock-gtest-all.cc $(INCLUDE) -lpthread $(OBJECTS) 
+	g++ -o $(TESTNAME) test_timer.cpp $(GTEST_DIR)/googletest/googletest/src/gtest_main.cc $(GTEST_DIR)/gmock-gtest-all.cc $(INCLUDE) -lpthread $(OBJECTS) 
 
 $(OBJECTS): $(SRCS)
 	gcc -c $(SRCS) $(INCLUDE)

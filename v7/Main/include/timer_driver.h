@@ -2,6 +2,8 @@
 #define __TIMER_DRIVER__
 
 #include "stm32f303x8.h"
+// Create Timer Driver
+extern void TimerCreate(RCC_TypeDef* rcc_addr, TIM_TypeDef* tim_addr, int irq_num);
 
 // Init Timer or Cancel Timer
 extern void TimerInit(void);

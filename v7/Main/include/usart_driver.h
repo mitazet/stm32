@@ -5,8 +5,9 @@
 
 extern void UsartCreate(RCC_TypeDef* rcc_addr, GPIO_TypeDef* gpio_addr, USART_TypeDef* usart_addr);
 extern void UsartInit(void);
-extern long UsartIsReadEnable(void);
-extern char UsartRead(void);
-extern void UsartWrite(char c);
+extern uint32_t UsartIsReadEnable(void);
+extern uint32_t UsartIsWriteEnable(void);
+extern uint8_t UsartRead(void);
+extern void UsartWrite(uint8_t c);
 
 #endif

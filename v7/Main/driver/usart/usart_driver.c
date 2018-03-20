@@ -2,6 +2,7 @@
 #include "usart_driver.h"
 #include "reg_io.h"
 
+// Default:USART2
 static RCC_TypeDef* rccAddress = RCC;
 static GPIO_TypeDef* gpioAddress = GPIOA;
 static USART_TypeDef* usartAddress = USART2;
@@ -13,59 +14,58 @@ void UsartCreate(RCC_TypeDef* rcc_addr, GPIO_TypeDef* gpio_addr, USART_TypeDef* 
     usartAddress = usart_addr;       
 }
 
-static void UsartEnablePin(void)
+static void EnablePin(void)
 {
-    rccAddress->AHBENR |= RCC_AHBENR_GPIOAEN;
+    RegWrite((uint32_t*)&rccAddress->AHBENR, RCC_AHBENR_GPIOAEN);
 
-    gpioAddress->MODER = 0;
-    gpioAddress->AFR[0] = 0;
-    gpioAddress->AFR[1] = 0;
+    RegClear((uint32_t*)&gpioAddress->MODER);
+    RegClear((uint32_t*)&gpioAddress->AFR[0]);
+    RegClear((uint32_t*)&gpioAddress->AFR[1]);
 
     // PA2 and PA15 as AF
-    gpioAddress->MODER |= GPIO_MODER_MODER2_1;
-    gpioAddress->MODER |= GPIO_MODER_MODER15_1;
+    RegWrite((uint32_t*)&gpioAddress->MODER, GPIO_MODER_MODER2_1 | GPIO_MODER_MODER15_1);
 
     // Select AF7 (USART2) for PA2 and PA15
-	gpioAddress->AFR[0] = (gpioAddress->AFR[0] & 0xFFFFF0FF) | 0x700;
-	gpioAddress->AFR[1] = (gpioAddress->AFR[1] & 0x0FFFFFFF) | 0x70000000;
+	RegWrite((uint32_t*)&gpioAddress->AFR[0], 0x700);
+	RegWrite((uint32_t*)&gpioAddress->AFR[1], 0x70000000);
 }
 
-static void UsartConfigure(void)
+static void Configure(void)
 {
 	// Distribute clock to USART2
-	rccAddress->APB1ENR |= RCC_APB1ENR_USART2EN;
+	RegWrite((uint32_t*)&rccAddress->APB1ENR, RCC_APB1ENR_USART2EN);
 
 	// Configure baudrate
-	usartAddress->BRR  = 8000000L/115200L;
+	RegWrite((uint32_t*)&usartAddress->BRR, 8000000L/115200L);
 
 	// Eable TX, RX and enable USART
-	usartAddress->CR1 |= USART_CR1_RE | USART_CR1_TE | USART_CR1_UE;
+	RegWrite((uint32_t*)&usartAddress->CR1, USART_CR1_RE | USART_CR1_TE | USART_CR1_UE);
 }
 
 void UsartInit(void)
 {
-	UsartEnablePin();
-	UsartConfigure();
+	EnablePin();
+	Configure();
 }
 
-long UsartIsReadEnable(void)
+uint32_t UsartIsReadEnable(void)
 {
 	return RegRead((uint32_t*)&usartAddress->ISR) & USART_ISR_RXNE;
 }
 
-long UsartIsWriteEnable(void)
+uint32_t UsartIsWriteEnable(void)
 {
 	return RegRead((uint32_t*)&usartAddress->ISR) & USART_ISR_TXE;
 }
 
-char UsartRead(void)
+uint8_t UsartRead(void)
 {
 	// Wait for a char on the USART
 	while (!UsartIsReadEnable());
 	return RegRead((uint32_t*)&usartAddress->RDR);
 }
 
-void UsartWrite(char c)
+void UsartWrite(uint8_t c)
 {
 	// Wait for a char on the USART
 	while (!UsartIsWriteEnable());
