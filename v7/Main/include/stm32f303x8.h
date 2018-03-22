@@ -142,8 +142,11 @@ typedef enum
 /**
   * @}
   */
-
+#ifndef DEBUG_GTEST
 #include "core_cm4.h"            /* Cortex-M4 processor and core peripherals */
+#else
+#include "core_cm4_test.h"
+#endif
 #include "system_stm32f30x.h"    /* STM32F3xx System Header */
 #include <stdint.h>
 
