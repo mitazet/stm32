@@ -35,12 +35,12 @@ class MockIo{
 		void FakeWriteReg(__IO void* address, uint32_t data){
 			*((uint32_t*)address) = data;
 		}
-	
+
 		void DelegateToVirtual() {
-			ON_CALL(*this, SetBit(_, _)).WillByDefault(Invoke(this, FakeSetBit));
-			ON_CALL(*this, ClearBit(_, _)).WillByDefault(Invoke(this, FakeClearBit));
-			ON_CALL(*this, ClearReg(_)).WillByDefault(Invoke(this, FakeClearReg));
-			ON_CALL(*this, WriteReg(_, _)).WillByDefault(Invoke(this, FakeWriteReg));
+			ON_CALL(*this, SetBit(_, _)).WillByDefault(Invoke(this, &MockIo::FakeSetBit));
+			ON_CALL(*this, ClearBit(_, _)).WillByDefault(Invoke(this, &MockIo::FakeClearBit));
+			ON_CALL(*this, ClearReg(_)).WillByDefault(Invoke(this, &MockIo::FakeClearReg));
+			ON_CALL(*this, WriteReg(_, _)).WillByDefault(Invoke(this, &MockIo::FakeWriteReg));
 		}
 };
 
