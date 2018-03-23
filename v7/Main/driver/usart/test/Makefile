@@ -29,4 +29,4 @@ clean:
 	rm *.o $(TESTNAME)
 
 gtest-gen:
-	python $(GTEST_DIR)/googletest/googlemock/scripts/fuse_gmock_files.py $(GTEST_DIR) 
+	python3 $(GTEST_DIR)/googletest/googlemock/scripts/fuse_gmock_files.py $(GTEST_DIR) 

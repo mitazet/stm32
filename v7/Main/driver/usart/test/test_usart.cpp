@@ -26,8 +26,8 @@ class MockIo{
 		}
 	
 		void DelegateToVirtual() {
-			ON_CALL(*this, RegClear(_)).WillByDefault(Invoke(this, FakeClear));
-			ON_CALL(*this, RegWrite(_, _)).WillByDefault(Invoke(this, FakeWrite));
+			ON_CALL(*this, RegClear(_)).WillByDefault(Invoke(this, &MockIo::FakeClear));
+			ON_CALL(*this, RegWrite(_, _)).WillByDefault(Invoke(this, &MockIo::FakeWrite));
 		}
 };
 
