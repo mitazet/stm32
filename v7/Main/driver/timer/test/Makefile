@@ -20,10 +20,10 @@ all: $(OBJECTS) $(TESTNAME)
 	./$(TESTNAME)
 
 $(TESTNAME): $(OBJECTS)
-	g++ -o $(TESTNAME) test_timer.cpp $(GTEST_DIR)/googletest/googletest/src/gtest_main.cc $(GTEST_DIR)/gmock-gtest-all.cc $(INCLUDE) -lpthread $(OBJECTS) 
+	g++ -o $(TESTNAME) test_timer.cpp $(GTEST_DIR)/googletest/googletest/src/gtest_main.cc $(GTEST_DIR)/gmock-gtest-all.cc $(INCLUDE) -lpthread $(OBJECTS) -D DEBUG_GTEST
 
 $(OBJECTS): $(SRCS)
-	gcc -c $(SRCS) $(INCLUDE)
+	gcc -c $(SRCS) $(INCLUDE) -D DEBUG_GTEST
 
 clean:
 	rm *.o $(TESTNAME)
