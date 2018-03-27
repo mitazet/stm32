@@ -1,7 +1,7 @@
 #ifndef __RTOS_H__
 
 // System call
-rtos_thread_id t RtosRun(rtos_func_t func, char* name, int stacksize, int argc, char* argv[]);
+rtos_thread_id_t RtosRun(rtos_func_t func, char* name, int stacksize, int argc, char* argv[]);
 void RtosTerminate(void);
 
 // Library function
