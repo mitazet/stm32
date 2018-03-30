@@ -206,10 +206,9 @@ SECTIONS
 
   /* buffer section */
   . = ALIGN(4);
-  .buffer :
+  .code :
   {
-    _buffer_start = .;         /* define a global symbol at buffer start */
   } >RAM_CODE
 
-  _MAIN_CODE_ADDR = ADDR(.buffer);
+  _MAIN_CODE_ADDR = ADDR(.code);
 }

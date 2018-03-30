@@ -40,7 +40,7 @@ int main(void)
     static char buf[16];
     static long size = -1;
     static unsigned char *loadbuf = NULL;
-    extern int _buffer_start;
+    extern int _app_vector;
     
     __disable_irq(); // disable interrupt
 
@@ -53,7 +53,7 @@ int main(void)
         gets(buf);
 
         if(!strcmp(buf, "load")){
-            loadbuf = (char*)(&_buffer_start);
+            loadbuf = (char*)(&_app_vector);
             size = XmodemRecv(loadbuf);
             wait();
             if(size < 0){
