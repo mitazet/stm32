@@ -1,6 +1,5 @@
 // Timer ----------------------------------------------------------------------
 #include "timer_driver.h"
-#include "intr_driver.h"
 #include <stdlib.h>
 #include "io_reg.h"
 

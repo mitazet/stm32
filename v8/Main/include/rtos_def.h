@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 typedef uint32_t rtos_thread_id_t;
-typedef int (*rtos_func_t)(int argc, char *argv[]);
+typedef int (*rtos_func_t)(void);
 typedef void (*rtos_handler_t)(void);
 
 #endif

@@ -1,6 +1,5 @@
-#include "rtos.h"
-#include "intr_driver.h"
 #include "printf.h"
+#include "rtos.h"
 #include "lib.h"
 
 #define THREAD_NUM 2
@@ -15,11 +14,7 @@ typedef struct _rtos_thread{
     char name[THREAD_NAME_SIZE + 1];
     char *stack;
 
-    struct{
-        rtos_func_t func;
-        int argc;
-        char** argv;
-    }init;
+    rtos_func_t func;
 
     struct{
         rtos_syscall_type_t type;
@@ -75,8 +70,7 @@ static void thread_end(void)
 
 static void thread_init(rtos_thread *thp)
 {
-    thp->init.func(thp->init.argc, thp->init.argv);
-    thread_end();
+    thp->func();
 }
 
 static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, int argc, char* argv[])
@@ -89,7 +83,7 @@ static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, 
 
     for(i = 0; i < THREAD_NUM; i++){
         thp = &threads[i];
-        if(!thp->init.func)
+        if(!thp->func)
             break;
     }
     if(i == THREAD_NUM)
@@ -100,9 +94,7 @@ static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, 
     strcpy(thp->name, name);
     thp->next = NULL;
 
-    thp->init.func = func;
-    thp->init.argc = argc;
-    thp->init.argv = argv;
+    thp->func = func;
 
     /* allocate stack area */
     memset(thread_stack, 0, stacksize);
@@ -113,9 +105,10 @@ static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, 
     sp = (uint32_t*)thp->stack - 16;
 
     sp[15] = (uint32_t)0x01000000; // xPSR
-    sp[14] = (uint32_t)thread_init;
+    sp[14] = (uint32_t)func;
     
     thp->context.sp = (uint32_t)sp;
+    printf("%s sp:0x%x\n", __FUNCTION__, sp);
 
     putcurrent();
 
@@ -127,7 +120,7 @@ static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, 
 
 static int thread_exit(void)
 {
-    printf("%s EXET.\n", current->name);
+    printf("%s EXIT.\n", current->name);
     memset(current, 0, sizeof(*current));
     return 0;
 }
@@ -159,6 +152,7 @@ static void syscall_proc(rtos_syscall_type_t type, rtos_syscall_param_t *p)
 
 static void schedule(void)
 {
+    printf("%s\n", __FUNCTION__);
     if(!readyque.head)
         RtosSysdown();
 
@@ -182,34 +176,33 @@ static void softerr_intr(void)
 
 static void thread_intr(void)
 {
-    syscall_intr();
+    printf("%s sp:0x%x\n", __FUNCTION__, current->context);
+    printf("%s return:0x%x\n", __FUNCTION__, *((uint32_t*)(current->context.sp)+14));
+    printf("%s xPSR:0x%x\n", __FUNCTION__, *((uint32_t*)(current->context.sp)+15));
 
-    schedule();
-
-    //dispatch(&current->context);
-
+    //syscall_intr();
+ 
+   __asm(
+           "ldmia %0!, {r4-r11};"
+           "msr    PSP, %0;"
+           "orr    lr, lr, #0xD;" // Return back to user mode
+           "bx     lr;"
+           :
+           : "r"   (current->context)
+      );
 }
 
+void RtosStart(rtos_func_t func, char *name, int stacksize, int argc, char *argv[]) __attribute__ ((naked));
 void RtosStart(rtos_func_t func, char *name, int stacksize, int argc, char *argv[])
 {
+    printf("%s\n", __FUNCTION__);
     current = NULL;
 
     readyque.head = readyque.tail = NULL;
     memset(threads, 0, sizeof(threads));
 
     current = (rtos_thread*)thread_run(func, name, stacksize, argc, argv);
-
-    // run first thread
-    __asm(
-            "ldmia  %0!, {r4-r11};"
-            "msr    PSP, %0;"
-            "orr    lr, #0xD;" // Return back to user mode
-            "bx     lr;"
-            :
-            : "r"   (current->context)
-       );
-
-    //dispatch(&current->context);
+    RtosRun(func, name, stacksize, argc, argv);
 }
 
 void RtosSysdown(void)
@@ -229,12 +222,14 @@ void RtosSyscall(rtos_syscall_type_t type, rtos_syscall_param_t *param)
 void SVC_Handler(void) __attribute__ ((naked));
 void SVC_Handler(void)
 {
+    printf("%s\n", __FUNCTION__);
     thread_intr();
 }
 
 void PendSV_Handler(void) __attribute__ ((naked));
 void PendSV_Handler(void)
 {
+    printf("%s\n", __FUNCTION__);
    __asm(
            "mrs     r0, PSP;"
            "stmdb   r0, {r4-r11};"
