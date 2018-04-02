@@ -6,6 +6,7 @@
 
 extern void SVC_Handler(void);
 extern void PendSV_Handler(void);
+extern void SysTick_Handler(void);
 
 // System call
 rtos_thread_id_t RtosRun(rtos_func_t func, char* name, int stacksize, int argc, char* argv[]);

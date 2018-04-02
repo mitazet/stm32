@@ -4,7 +4,7 @@
 
 #define THREAD_NUM 2
 #define THREAD_NAME_SIZE 15
-
+#if 0
 typedef struct _rtos_context{
     uint32_t sp;
 }rtos_context;
@@ -249,4 +249,4 @@ void PendSV_Handler(void)
            : "r"   (current->context)
       );
 }
-
+#endif

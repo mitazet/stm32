@@ -20,7 +20,7 @@ void (*vectors[])(void) = {
 	NULL, // DebugMon_Handler
 	NULL, // 0
 	PendSV_Handler, // PendSV_Handler
-	NULL, // SysTick_Handler
+	SysTick_Handler, // SysTick_Handler
 	NULL, // WWDG_IRQHandler
 	NULL, // PVD_IRQHandler
 	NULL, // TAMP_STAMP_IRQHandler
