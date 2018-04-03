@@ -12,7 +12,7 @@
 #include "printf.h"
 
 //
-// Cortex-M3が例外発生時に自動的にPUSHするレジスタ類
+// Cortex-M4が例外発生時に自動的にPUSHするレジスタ類
 //
 struct ESTK_STRUC {
 	unsigned int	r_r0;
@@ -42,7 +42,7 @@ struct TSTK_STRUC {
 	unsigned int	r_r10;
 	unsigned int	r_r11;
 
-//------ここから先はCortex-M3が自動的に積む分------
+//------ここから先はCortex-M4が自動的に積む分------
 	unsigned int	r_r0;
 	unsigned int	r_r1;
 	unsigned int	r_r2;
@@ -55,7 +55,7 @@ struct TSTK_STRUC {
 typedef struct TSTK_STRUC TSTK;
 
 #define	TSTKSIZE	((sizeof (struct TSTK_STRUC))/sizeof (int))	// 各タスクが非スケジュール時に使用するスタックサイズ
-#define	ESTKSIZE	((sizeof (struct ESTK_STRUC))/sizeof (int))	// Cortex-M3が例外発生時に自動的に使用するスタックサイズ
+#define	ESTKSIZE	((sizeof (struct ESTK_STRUC))/sizeof (int))	// Cortex-M4が例外発生時に自動的に使用するスタックサイズ
 #define	UPUSHSIZE	(TSTKSIZE-ESTKSIZE)
 
 //
@@ -88,25 +88,6 @@ TCTRL	tcb[MAX_TASKNUM];	// TCBをタスク数分確保
 
 #define	STKSIZE	64			// タスク用スタックサイズ（64ワード：256バイト）
 unsigned int	stk_task[MAX_TASKNUM][STKSIZE];	// タスク用スタックエリア
-
-
-//
-// メッセージブロック
-//
-// メッセージもキューで管理するほうが効率も格好も良いのだけども、
-// 今回はメッセージブロックの総数が少ないので、実装の単純化を優先
-// して、毎回全メッセージブロックをスキャンすることにした
-//
-#define	MAX_MSGBLK	8
-struct MSGBLK_STRUC {
-	unsigned char	link;
-	unsigned char	param_c;
-	unsigned short	param_s;
-	unsigned int	param_i;
-};
-typedef struct MSGBLK_STRUC MSGBLK;
-MSGBLK msgblk[MAX_MSGBLK];
-
 
 
 //===============================================
@@ -231,12 +212,6 @@ void process_sleep(void)
 	}
 }
 
-
-//===============================================
-//= メッセージブロック関連処理			=
-//===============================================
-unsigned char q_msgblk;
-
 //
 // システムタイマ割り込みの処理
 //
@@ -332,20 +307,20 @@ void PendSV_Handler()
 	// ・c_task（現在実行中のタスクのTCBをさしている）にR12を退避
 	// を実行
 	__asm(						// R12をワーク用スタックとして利用
-		"mrs	r12,psp\n\t"			// R12にPSPの値をコピー
-//		"stmdb	r12!,{r4-r11,lr}\n\t"
-		"stmdb	r12!,{r4-r11}\n\t"		// 自動退避されないR4～R11を退避
-		"movw	r2,#:lower16:c_task\n\t"	// *(ctask->sp) = R12;
-		"movt	r2,#:upper16:c_task\n\t"
-		"ldr	r0,[r2,#0]\n\t"
-		"str	r12,[r0,#4]\n\t"
+		"mrs	r12,psp;"			// R12にPSPの値をコピー
+//		"stmdb	r12!,{r4-r11,lr};"
+		"stmdb	r12!,{r4-r11};"		// 自動退避されないR4～R11を退避
+		"movw	r2,#:lower16:c_task;"	// *(ctask->sp) = R12;
+		"movt	r2,#:upper16:c_task;"
+		"ldr	r0,[r2,#0];"
+		"str	r12,[r0,#4];"
 	);
 
 	// 次にスケジュールするタスクの選択
 	__asm(
-		"push	{lr}\n\t"
-		"bl	schedule\n\t"
-		"pop	{lr}\n\t"
+		"push	{lr};"
+		"bl	schedule;"
+		"pop	{lr};"
 	);
 
 	// 後半部分では
@@ -355,16 +330,16 @@ void PendSV_Handler()
 	// ・汎用レジスタを復旧（ldmia（Inc. After）を利用）
 	// 元に戻る
 	__asm (
-		"movw	r2,#:lower16:c_task\n\t"	// R12 = *(c_task->sp);
-		"movt	r2,#:upper16:c_task\n\t"
-		"ldr	r0,[r2,#0]\n\t"
-		"ldr	r12,[r0,#4]\n\t"
+		"movw	r2,#:lower16:c_task;"	// R12 = *(c_task->sp);
+		"movt	r2,#:upper16:c_task;"
+		"ldr	r0,[r2,#0];"
+		"ldr	r12,[r0,#4];"
 
-//		"ldmia	r12!,{r4-r11,lr}\n\t"
-		"ldmia	r12!,{r4-r11}\n\t"		// R4～R11を復帰
+//		"ldmia	r12!,{r4-r11,lr};"
+		"ldmia	r12!,{r4-r11};"		// R4～R11を復帰
 
-		"msr	psp,r12\n\t"			// PSP = R12;
-		"bx	lr\n\t"				// (RETURN)
+		"msr	psp,r12;"			// PSP = R12;
+		"bx	lr;"				// (RETURN)
 	);
 }
 
@@ -374,28 +349,29 @@ void SVC_Handler(void) __attribute__ ((naked));
 void SVC_Handler()
 {
 	__asm(
-		"movw	r2,#:lower16:svcparam\n\t"	// svcparam[0] = R0;
-		"movt	r2,#:upper16:svcparam\n\t"	// svcparam[1] = R1;
-		"str	r0,[r2,#0]\n\t"
-		"str	r1,[r2,#4]\n\t"
-		"mov	r0,lr\n\t"		// if ((R0 = LR & 0x04) != 0) {
-		"ands	r0,#4\n\t" 		//			// LRのビット4が'0'ならハンドラモードでSVC
-		"beq	.L0000\n\t"		//			// '1'ならスレッドモードでSVC
-		"mrs	r1,psp\n\t"		// 	R1 = PSP;	// プロセススタックをコピー
-		"b		.L0001\n\t"		//
-		".L0000:\n\t"			// } else {
-		"mrs	r1,msp\n\t"		//	R1 = MSP;	// メインスタックをコピー
-		".L0001:\n\t"			// }
-		"ldr	r2,[r1,#24]\n\t"	// R2 = R1->PC;
-		"ldr	r0,[r2,#-2]\n\t"	// R0 = *(R2-2);	// SVC(SWI)命令の下位バイトが引数部分
+		"movw	r2,#:lower16:svcparam;"	// svcparam[0] = R0;
+		"movt	r2,#:upper16:svcparam;"	// svcparam[1] = R1;
+		"str	r0,[r2,#0];"
+		"str	r1,[r2,#4];"
+		"mov	r0,lr;"		// if ((R0 = LR & 0x04) != 0) {
+		"ands	r0,#4;" 		//			// LRのビット4が'0'ならハンドラモードでSVC
+		"beq	.L0000;"		//			// '1'ならスレッドモードでSVC
+		"mrs	r1,psp;"		// 	R1 = PSP;	// プロセススタックをコピー
+		"b		.L0001;"		//
+		".L0000:;"			// } else {
+		"mrs	r1,msp;"		//	R1 = MSP;	// メインスタックをコピー
+		".L0001:;"			// }
+		"ldr	r2,[r1,#24];"	// R2 = R1->PC;
+		"ldr	r0,[r2,#-2];"	// R0 = *(R2-2);	// SVC(SWI)命令の下位バイトが引数部分
 
-		"movw	r2,#:lower16:svcop\n\t"	// svcop = R0;		// svcop変数にコピー
-		"movt	r2,#:upper16:svcop\n\t"
-		"str	r0,[r2,#0]\n\t"
-
-		"push	{r7}\n\t"		// PUSH R7	// C言語でフレームポインタにR7を使っているため
-		"sub	sp,sp,#8\n\t"		// SP -= 8;	// (4バイト×2個分）：C言語側で２ワード分使っていたため
-		"mov	r7,sp\n\t"		// R7 = SP;
+		"movw	r2,#:lower16:svcop;"	// svcop = R0;		// svcop変数にコピー
+		"movt	r2,#:upper16:svcop;"
+		"str	r0,[r2,#0];"
+#if 0
+		"push	{r7};"		// PUSH R7	// C言語でフレームポインタにR7を使っているため
+		"sub	sp,sp,#8;"		// SP -= 8;	// (4バイト×2個分）：C言語側で２ワード分使っていたため
+		"mov	r7,sp;"		// R7 = SP;
+#endif
 	);
 
 	switch(svcop & 0xff) {			// SVCの引数（リクエストコード）を取得
@@ -425,10 +401,10 @@ void SVC_Handler()
 			break;
 		case 0x19:	// TASKIDGET
 			__asm(
-				"movw	r0,#:lower16:c_tasknum\n\t"	// R0=c_tasknum
-				"movt	r0,#:upper16:c_tasknum\n\t"
-				"ldrb	r0,[r0,#0]\n\t"
-				"str	r0,[r1,#0]\n\t"			// return(R0);
+				"movw	r0,#:lower16:c_tasknum;"	// R0=c_tasknum
+				"movt	r0,#:upper16:c_tasknum;"
+				"ldrb	r0,[r0,#0];"
+				"str	r0,[r1,#0];"			// return(R0);
 			);
 			break;
 		case 0xf0:	// CHG_IDLE
@@ -437,11 +413,11 @@ void SVC_Handler()
 			break;
 		case 0xff:	// CHG_UNPRIVILEGE
 			__asm(
-				"movw	r2,#:lower16:c_task\n\t"	// psp = *(c_task->sp);
-				"movt	r2,#:upper16:c_task\n\t"
-				"ldr	r0,[r2,#0]\n\t"
-				"ldr	r2,[r0,#4]\n\t"
-				"msr	psp,r2\n\t"
+				"movw	r2,#:lower16:c_task;"	// psp = *(c_task->sp);
+				"movt	r2,#:upper16:c_task;"
+				"ldr	r0,[r2,#0];"
+				"ldr	r2,[r0,#4];"
+				"msr	psp,r2;"
 				"orr	lr,lr,#4"			// LR |= 0x04;
 									// スレッドモードに移行
 									// 1001:msp使用(プロセス） 1101:psp使用（スレッド）
@@ -453,10 +429,12 @@ void SVC_Handler()
 		default:
 			break;
 	}
-	__asm(	"add	sp,sp,#8\n\t"
-			"pop	{r7}\n\t"
-			"bx	lr\n\t"
-	);
+
+    __asm(
+        "add	sp,sp,#8;"
+        "pop	{r7};"
+        "bx     lr;"
+        );
 }
 
 
@@ -472,17 +450,17 @@ void SVC_Handler()
 //===============================
 
 
-#define	SYSCALL_NULL	__asm("svc #0x00\n\t")
-#define	SYSCALL_LEDOFF	__asm("svc #0x01\n\t")
-#define	SYSCALL_LEDON	__asm("svc #0x02\n\t")
+#define	SYSCALL_NULL	__asm("svc #0x00;")
+#define	SYSCALL_LEDOFF	__asm("svc #0x01;")
+#define	SYSCALL_LEDON	__asm("svc #0x02;")
 
-#define	SYSCALL_IDLE	__asm("svc #0xf0\n\t")
-#define	SYSCALL_CHG_UNPRIVILEGE	__asm("svc #0xff\n\t")
+#define	SYSCALL_IDLE	__asm("svc #0xf0;")
+#define	SYSCALL_CHG_UNPRIVILEGE	__asm("svc #0xff;")
 
 #define SYSCALL_SLEEP(x)	{register int p0 __asm("r0"); p0=x; __asm ("svc #0x10"::"r"(p0));}
 #define	SYSCALL_TASKON(x)	{register int p0 __asm("r0"); p0=x; __asm ("svc #0x11"::"r"(p0));}
 #define	SYSCALL_TASKOFF(x)	{register int p0 __asm("r0"); p0=x; __asm ("svc #0x12"::"r"(p0));}
-#define	SYSCALL_TASKIDGET	__asm("svc #0x19\n\t")
+#define	SYSCALL_TASKIDGET	__asm("svc #0x19;")
 
 
 //===============================
@@ -578,7 +556,7 @@ void th_zero()
 	printf("%s\n", __FUNCTION__);
 	dbgdata[0] = SVC_TASKIDGET();
 	while(1) {
-		SVC_NULL();
+        printf("Hey\n");
 	}
 }
 
@@ -587,8 +565,7 @@ void th_one()
 	printf("%s\n", __FUNCTION__);
 	dbgdata[1] = SVC_TASKIDGET();
 	while(1) {
-		SVC_LEDON();
-		SVC_SLEEP(2);
+        printf("money\n");
 	}
 }
 
@@ -597,8 +574,7 @@ void th_two()
 	printf("%s\n", __FUNCTION__);
 	dbgdata[2] = SVC_TASKIDGET();
 	while(1) {
-		SVC_LEDOFF();
-		SVC_SLEEP(2);
+        printf("gold\n");
 	}
 }
 
@@ -664,7 +640,8 @@ int main(void)
 	c_task = &tcb[c_tasknum];
 
 	pendsv_count = 0;
-	systick_count = 10;
+	//systick_count = 10;
+	systick_count = 0;
 //	SysTick_Config(SystemCoreClock/100);	// 1/100秒（=10ms）ごとにSysTick割り込み
 	SysTick_Config(SystemCoreClock/10);	// 1/10秒（=100ms）ごとにSysTick割り込み
 	NVIC_SetPriority(SVCall_IRQn, 0x80);	// SVCの優先度は中ほど
@@ -673,6 +650,7 @@ int main(void)
 
     __enable_irq(); // enable interrupt
 
+    SVC_LEDON();
 	//　この段階ではまだ特権モードであり、MSPが使われている
 	//　PSPプロセススタックは非特権モードで動いている状態
 	// タスク#0（main()から直接切り替わって動くタスク）のスタック
@@ -691,13 +669,13 @@ int main(void)
 	tcb[1].state = STATE_READY;
 
 	regist_tcb(2, th_two);
-	tcb[2].state = STATE_IDLE;
+	tcb[2].state = STATE_READY;
 
 	// Ready_Qにつないでおく
 	// 最初は#0が動くことにしたので、#0はいきなりCurrentTASKになるため、
 	// Ready_Qにつなぐのは0以外
 	tcbq_append(&q_ready, 1);
-//	tcbq_append(&q_ready, 2);
+	tcbq_append(&q_ready, 2);
 
 	tcb[3].state = STATE_FREE;
 	tcb[3].link = EOQ;
