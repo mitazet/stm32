@@ -51,7 +51,7 @@ $(OBJDIR)/%.o: %.c
 $(OBJDIR)/%.o: %.s
 	$(AS) -g $< -o $@
 
-.PHONY: clean flash
+.PHONY: clean st-flash
 
 st-flash: $(OBJECTNAME).bin
 	$(STFLASH) write $(OBJECTNAME).bin 0x8000000

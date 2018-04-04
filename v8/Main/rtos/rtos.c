@@ -4,6 +4,7 @@
 
 #define THREAD_NUM 2
 #define THREAD_NAME_SIZE 15
+
 #if 0
 typedef struct _rtos_context{
     uint32_t sp;
@@ -176,10 +177,6 @@ static void softerr_intr(void)
 
 static void thread_intr(void)
 {
-    printf("%s sp:0x%x\n", __FUNCTION__, current->context);
-    printf("%s return:0x%x\n", __FUNCTION__, *((uint32_t*)(current->context.sp)+14));
-    printf("%s xPSR:0x%x\n", __FUNCTION__, *((uint32_t*)(current->context.sp)+15));
-
     //syscall_intr();
  
    __asm(
@@ -222,8 +219,14 @@ void RtosSyscall(rtos_syscall_type_t type, rtos_syscall_param_t *param)
 void SVC_Handler(void) __attribute__ ((naked));
 void SVC_Handler(void)
 {
-    printf("%s\n", __FUNCTION__);
-    thread_intr();
+   __asm(
+           "ldmia %0!, {r4-r11};"
+           "msr    PSP, %0;"
+           "orr    lr, lr, #0xD;" // Return back to user mode
+           "bx     lr;"
+           :
+           : "r"   (current->context)
+      );
 }
 
 void PendSV_Handler(void) __attribute__ ((naked));

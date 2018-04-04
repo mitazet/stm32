@@ -235,6 +235,10 @@ void SysTick_Handler()
 	}
 }
 
+void pend_sv(void)
+{
+	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+}
 
 unsigned int pendsv_count;
 // 
@@ -307,21 +311,20 @@ void PendSV_Handler()
 	// ・c_task（現在実行中のタスクのTCBをさしている）にR12を退避
 	// を実行
 	__asm(						// R12をワーク用スタックとして利用
-		"mrs	r12,psp;"			// R12にPSPの値をコピー
-//		"stmdb	r12!,{r4-r11,lr};"
-		"stmdb	r12!,{r4-r11};"		// 自動退避されないR4～R11を退避
-		"movw	r2,#:lower16:c_task;"	// *(ctask->sp) = R12;
-		"movt	r2,#:upper16:c_task;"
-		"ldr	r0,[r2,#0];"
-		"str	r12,[r0,#4];"
-	);
+			"mrs	r12,psp;"			// R12にPSPの値をコピー
+			"stmdb	r12!,{r4-r11};"		// 自動退避されないR4～R11を退避
+			"movw	r2,#:lower16:c_task;"	// *(ctask->sp) = R12;
+			"movt	r2,#:upper16:c_task;"
+			"ldr	r0,[r2,#0];"
+			"str	r12,[r0,#4];"
+		 );
 
 	// 次にスケジュールするタスクの選択
 	__asm(
-		"push	{lr};"
-		"bl	schedule;"
-		"pop	{lr};"
-	);
+			"push	{lr};"
+			"bl		schedule;"
+			"pop	{lr};"
+		 );
 
 	// 後半部分では
 	// 新しいc_taskの指す先（次に動かすタスクのTCB）からレジスタを復帰
@@ -330,17 +333,16 @@ void PendSV_Handler()
 	// ・汎用レジスタを復旧（ldmia（Inc. After）を利用）
 	// 元に戻る
 	__asm (
-		"movw	r2,#:lower16:c_task;"	// R12 = *(c_task->sp);
-		"movt	r2,#:upper16:c_task;"
-		"ldr	r0,[r2,#0];"
-		"ldr	r12,[r0,#4];"
+			"movw	r2,#:lower16:c_task;"	// R12 = *(c_task->sp);
+			"movt	r2,#:upper16:c_task;"
+			"ldr	r0,[r2,#0];"
+			"ldr	r12,[r0,#4];"
 
-//		"ldmia	r12!,{r4-r11,lr};"
-		"ldmia	r12!,{r4-r11};"		// R4～R11を復帰
+			"ldmia	r12!,{r4-r11};"		// R4～R11を復帰
 
-		"msr	psp,r12;"			// PSP = R12;
-		"bx	lr;"				// (RETURN)
-	);
+			"msr	psp,r12;"			// PSP = R12;
+			"bx		lr;"				// (RETURN)
+		  );
 }
 
 unsigned int svcop;
@@ -367,22 +369,11 @@ void SVC_Handler()
 		"movw	r2,#:lower16:svcop;"	// svcop = R0;		// svcop変数にコピー
 		"movt	r2,#:upper16:svcop;"
 		"str	r0,[r2,#0];"
-#if 0
-		"push	{r7};"		// PUSH R7	// C言語でフレームポインタにR7を使っているため
-		"sub	sp,sp,#8;"		// SP -= 8;	// (4バイト×2個分）：C言語側で２ワード分使っていたため
-		"mov	r7,sp;"		// R7 = SP;
-#endif
 	);
 
 	switch(svcop & 0xff) {			// SVCの引数（リクエストコード）を取得
 		case 0x00:	// NULL（再スケジューリングするだけ）
 			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;		// PendSVを発生させてスケジューリング
-			break;
-		case 0x01:	// LEDOFF
-			printf("LED_OFF\n");
-			break;
-		case 0x02:	// LEDON
-			printf("LED_ON\n");
 			break;
 		case 0x10:	// SLEEP
 			tcb[c_tasknum].param1 = svcparam[0];		// パラメータを積んで
@@ -418,7 +409,7 @@ void SVC_Handler()
 				"ldr	r0,[r2,#0];"
 				"ldr	r2,[r0,#4];"
 				"msr	psp,r2;"
-				"orr	lr,lr,#4"			// LR |= 0x04;
+				"orr	lr,lr,#4;"			// LR |= 0x04;
 									// スレッドモードに移行
 									// 1001:msp使用(プロセス） 1101:psp使用（スレッド）
 									// なので、セットするとスレッドモードになる
@@ -430,11 +421,9 @@ void SVC_Handler()
 			break;
 	}
 
-    __asm(
-        "add	sp,sp,#8;"
-        "pop	{r7};"
-        "bx     lr;"
-        );
+	__asm(
+		"bx     lr;"
+		);
 }
 
 
@@ -451,8 +440,6 @@ void SVC_Handler()
 
 
 #define	SYSCALL_NULL	__asm("svc #0x00;")
-#define	SYSCALL_LEDOFF	__asm("svc #0x01;")
-#define	SYSCALL_LEDON	__asm("svc #0x02;")
 
 #define	SYSCALL_IDLE	__asm("svc #0xf0;")
 #define	SYSCALL_CHG_UNPRIVILEGE	__asm("svc #0xff;")
@@ -475,23 +462,6 @@ void SVC_Handler()
 void SVC_NULL(void)
 {
 	SYSCALL_NULL;
-}
-
-//
-// LEDOFF：dummy
-//
-void SVC_LEDOFF(void)
-{
-	SYSCALL_LEDOFF;
-}
-
-
-//
-// LEDON：dummy
-//
-void SVC_LEDON(void)
-{
-	SYSCALL_LEDON;
 }
 
 //
@@ -650,7 +620,6 @@ int main(void)
 
     __enable_irq(); // enable interrupt
 
-    SVC_LEDON();
 	//　この段階ではまだ特権モードであり、MSPが使われている
 	//　PSPプロセススタックは非特権モードで動いている状態
 	// タスク#0（main()から直接切り替わって動くタスク）のスタック
