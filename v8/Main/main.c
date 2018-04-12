@@ -1,12 +1,11 @@
-/*
- main.c
-*/
+/* main.c */
 
+#include <stdlib.h>
 #include "stm32f303x8.h"
 #include "printf.h"
 #include "rtos.h"
 
-/* システム・タスクとユーザ・スレッドの起動 */
+/* ユーザスレッド */
 static int test(int argc, char *argv[])
 {  
 	while(1){
@@ -45,9 +44,9 @@ int main(void){
     __enable_irq(); // enable interrupt
 
     RtosInit();
-    RtosThreadCreate(test, "test", 0x100, 0, NULL);
-    RtosThreadCreate(demo, "demo", 0x100, 0, NULL);
-    RtosThreadCreate(proto, "proto", 0x100, 0, NULL);
+    RtosThreadCreate((rtos_func_t)test, "test", 0x100, 0, NULL);
+    RtosThreadCreate((rtos_func_t)demo, "demo", 0x100, 0, NULL);
+    RtosThreadCreate((rtos_func_t)proto, "proto", 0x100, 0, NULL);
 
 	/* OSの動作開始 */  
 	RtosStart();  

@@ -1,5 +1,6 @@
 #include "rtos.h"
 #include "timer_driver.h"
+#include <stdlib.h>
 
 void (*vectors[])(void)
     __attribute__ ((section (".app_vector")));
