@@ -1,11 +1,12 @@
 #include "printf.h"
-#include "rtos.h"
 #include "lib.h"
+#include "rtos.h"
 
-#define THREAD_NUM 2
+#define THREAD_NUM 3 
 #define THREAD_NAME_SIZE 15
 
-#if 0
+unsigned char rtos_start = 0;
+
 typedef struct _rtos_context{
     uint32_t sp;
 }rtos_context;
@@ -14,14 +15,18 @@ typedef struct _rtos_thread{
     struct _rtos_thread *next;
     char name[THREAD_NAME_SIZE + 1];
     char *stack;
+    
+    struct {
+        rtos_func_t func;
+        int argc;
+        char  **argv;
+    }init;
 
-    rtos_func_t func;
-
-    struct{
+    struct {
         rtos_syscall_type_t type;
         rtos_syscall_param_t *param;
     }syscall;
-
+    
     rtos_context context;
 }rtos_thread;
 
@@ -32,21 +37,6 @@ static struct{
 
 static rtos_thread *current;
 static rtos_thread threads[THREAD_NUM];
-
-static int getcurrent(void)
-{
-    if(current == NULL){
-        return -1;
-    }
-
-    readyque.head = current->next;
-    if(readyque.head == NULL){
-        readyque.tail = NULL;
-    }
-    current->next = NULL;
-
-    return 0;
-}
 
 static int putcurrent(void)
 {
@@ -64,14 +54,9 @@ static int putcurrent(void)
     return 0;
 }
 
-static void thread_end(void)
-{
-    RtosTerminate();
-}
-
 static void thread_init(rtos_thread *thp)
 {
-    thp->func();
+    thp->init.func();
 }
 
 static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, int argc, char* argv[])
@@ -84,7 +69,7 @@ static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, 
 
     for(i = 0; i < THREAD_NUM; i++){
         thp = &threads[i];
-        if(!thp->func)
+        if(!thp->init.func)
             break;
     }
     if(i == THREAD_NUM)
@@ -92,26 +77,27 @@ static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, 
 
     memset(thp, 0, sizeof(*thp));
 
+    /* set TCB */
     strcpy(thp->name, name);
     thp->next = NULL;
 
-    thp->func = func;
+    thp->init.func = func;
+    thp->init.argc = argc;
+    thp->init.argv = argv;
 
     /* allocate stack area */
     memset(thread_stack, 0, stacksize);
     thread_stack += stacksize;
 
-    thp->stack = thread_stack; //stack bottom
+    thp->stack = thread_stack;
 
     sp = (uint32_t*)thp->stack - 16;
 
-    sp[15] = (uint32_t)0x01000000; // xPSR
-    sp[14] = (uint32_t)func;
+    sp[15] = (uint32_t)0x01000000;  // xPSR
+    sp[14] = (uint32_t)thread_init; // PC
+    sp[8]  = (uint32_t)thp;         // r0:Argument
     
     thp->context.sp = (uint32_t)sp;
-    printf("%s sp:0x%x\n", __FUNCTION__, sp);
-
-    putcurrent();
 
     current = thp;
     putcurrent();
@@ -119,87 +105,37 @@ static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, 
     return (rtos_thread_id_t)current;
 }
 
-static int thread_exit(void)
+void schedule(void)
 {
-    printf("%s EXIT.\n", current->name);
-    memset(current, 0, sizeof(*current));
-    return 0;
-}
-
-static void call_functions(rtos_syscall_type_t type, rtos_syscall_param_t *p)
-{
-    switch(type){
-        case RTOS_SYSCALL_TYPE_RUN:
-            p->un.run.ret = thread_run(p->un.run.func, 
-                                       p->un.run.name,
-                                       p->un.run.stacksize,
-                                       p->un.run.argc,
-                                       p->un.run.argv);
-            break;
-
-        case RTOS_SYSCALL_TYPE_EXIT:
-            thread_exit();
-            break;
-        default:
-            break;
-    }
-}
-
-static void syscall_proc(rtos_syscall_type_t type, rtos_syscall_param_t *p)
-{
-    getcurrent();
-    call_functions(type, p);
-}
-
-static void schedule(void)
-{
-    printf("%s\n", __FUNCTION__);
     if(!readyque.head)
         RtosSysdown();
-
+    
     current = readyque.head;
 
-    // pend sv call
-    SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+    readyque.head = current->next;
+    readyque.tail->next = current;
+    readyque.tail = current;
+    readyque.tail->next = NULL;
 }
 
-static void syscall_intr(void)
+void RtosInit(void)
 {
-    syscall_proc(current->syscall.type, current->syscall.param);
-}
-
-static void softerr_intr(void)
-{
-    printf("%s DOWN.\n", current->name);
-    getcurrent();
-    thread_exit();
-}
-
-static void thread_intr(void)
-{
-    //syscall_intr();
- 
-   __asm(
-           "ldmia %0!, {r4-r11};"
-           "msr    PSP, %0;"
-           "orr    lr, lr, #0xD;" // Return back to user mode
-           "bx     lr;"
-           :
-           : "r"   (current->context)
-      );
-}
-
-void RtosStart(rtos_func_t func, char *name, int stacksize, int argc, char *argv[]) __attribute__ ((naked));
-void RtosStart(rtos_func_t func, char *name, int stacksize, int argc, char *argv[])
-{
-    printf("%s\n", __FUNCTION__);
     current = NULL;
 
     readyque.head = readyque.tail = NULL;
     memset(threads, 0, sizeof(threads));
+}
 
-    current = (rtos_thread*)thread_run(func, name, stacksize, argc, argv);
-    RtosRun(func, name, stacksize, argc, argv);
+void RtosStart(void)
+{
+    /* run first thread */
+	current->context.sp = (uint32_t)((uint32_t*)current->context.sp + 8);
+    __asm volatile ("svc 0");
+}
+
+void RtosThreadCreate(rtos_func_t func, char *name, int stacksize, int argc, char *argv[])
+{
+    thread_run(func, name, stacksize, argc, argv);
 }
 
 void RtosSysdown(void)
@@ -213,43 +149,99 @@ void RtosSyscall(rtos_syscall_type_t type, rtos_syscall_param_t *param)
     current->syscall.type = type;
     current->syscall.param = param;
     
-    __asm volatile ("svc 0");
+    
+    switch(type){
+        case RTOS_SYSCALL_CHG_UNPRIVILEGE:
+            __asm volatile ("svc 0");
+            break;
+        default:
+            break;
+    }
 }
 
+unsigned int svcop;
 void SVC_Handler(void) __attribute__ ((naked));
 void SVC_Handler(void)
 {
-   __asm(
-           "ldmia %0!, {r4-r11};"
-           "msr    PSP, %0;"
-           "orr    lr, lr, #0xD;" // Return back to user mode
-           "bx     lr;"
-           :
-           : "r"   (current->context)
-      );
+    __asm(
+            "mov	r0,lr;"		// if ((R0 = LR & 0x04) != 0) {
+            "ands	r0,#4;" 	//			// LRのビット4が'0'ならハンドラモードでSVC
+            "beq	.L0000;"	//			// '1'ならスレッドモードでSVC
+            "mrs	r1,psp;"	// 	R1 = PSP;	// プロセススタックをコピー
+            "b		.L0001;"	//
+            ".L0000:;"			// } else {
+            "mrs	r1,msp;"	//	R1 = MSP;	// メインスタックをコピー
+            ".L0001:;"			// }
+            "ldr	r2,[r1,#24];"	// R2 = R1->PC;
+            "ldr	r0,[r2,#-2];"	// R0 = *(R2-2);	// SVC(SWI)命令の下位バイトが引数部分
+
+            "movw	r2,#:lower16:svcop;"	// svcop = R0;		// svcop変数にコピー
+            "movt	r2,#:upper16:svcop;"
+            "str	r0,[r2,#0];"
+         );
+
+    switch(svcop & 0xff){
+        case RTOS_SYSCALL_CHG_UNPRIVILEGE:
+            __asm(
+                    "movw	r2,#:lower16:current;"
+                    "movt	r2,#:upper16:current;"
+                    "ldr	r0,[r2,#0];"
+                    "ldr	r2,[r0,#44];"
+                    "msr    PSP, r2;"
+                    "orr    lr, lr, #4;" // Return back to user mode
+                 );
+            rtos_start = 1;
+            SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+            break;
+        default:
+            break;
+    }
+    __asm(
+            "bx     lr;"
+         );
 }
 
 void PendSV_Handler(void) __attribute__ ((naked));
 void PendSV_Handler(void)
 {
-    printf("%s\n", __FUNCTION__);
-   __asm(
-           "mrs     r0, PSP;"
-           "stmdb   r0, {r4-r11};"
-           "str     r0, [%0];"
-           :
-           : "r"    (&current->context)
-           : "r0"
-      );
+    __asm(						// R12をワーク用スタックとして利用
+            "mrs	r12,psp;"			// R12にPSPの値をコピー
+            "stmdb	r12!,{r4-r11};"		// 自動退避されないR4～R11を退避
+            "movw	r2,#:lower16:current;"	// *(current->context) = R12;
+            "movt	r2,#:upper16:current;"
+            "ldr	r0,[r2,#0];"
+            "str	r12,[r0,#44];"
+         );
 
-   // 次のスレッドのスケジューリングが必要
+   // 次スレッドのスケジューリング
    __asm(
-           "ldmia  %0!, {r4-r11};"
-           "msr    PSP, %0;"
-           "orr    lr, #0xD;" // Return back to user mode
-           "bx     lr;"
-           :
-           : "r"   (current->context)
-      );
+           "push    {lr};"
+           "bl      schedule;"
+           "pop     {lr};"
+        );
+
+   __asm (
+           "movw	r2,#:lower16:current;"	// R12 = *(current->context);
+           "movt	r2,#:upper16:current;"
+           "ldr     r0,[r2,#0];"
+           "ldr     r12,[r0,#44];"
+
+           "ldmia	r12!,{r4-r11};"		// R4～R11を復帰
+
+           "msr     psp,r12;"			// PSP = R12;
+           "bx		lr;"				// (RETURN)
+         );
 }
-#endif
+
+unsigned int sticks = 3;
+void SysTick_Handler()
+{
+	if (rtos_start) {
+		if (sticks)
+			sticks--;
+		else {
+			sticks = 3;
+			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+		}
+	}
+}

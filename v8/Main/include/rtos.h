@@ -1,8 +1,30 @@
 #ifndef __RTOS_H__
 #define __RTOS_H__
 
-#include "rtos_def.h"
-#include "syscall.h"
+#include "stm32f303x8.h"
+
+typedef uint32_t rtos_thread_id_t;
+typedef int (*rtos_func_t)(void);
+typedef void (*rtos_handler_t)(void);
+
+typedef enum {
+    RTOS_SYSCALL_CHG_UNPRIVILEGE = 0,
+}rtos_syscall_type_t;
+typedef struct{
+    union{
+        struct{
+            rtos_func_t func;
+            char* name;
+            int stacksize;
+            int argc;
+            char **argv;
+            rtos_thread_id_t ret;
+        }run;
+        struct{
+            int dummy;
+        }exit;
+    }un;
+}rtos_syscall_param_t;
 
 extern void SVC_Handler(void);
 extern void PendSV_Handler(void);
@@ -13,9 +35,11 @@ rtos_thread_id_t RtosRun(rtos_func_t func, char* name, int stacksize, int argc, 
 void RtosTerminate(void);
 
 // Library function
-void RtosStart(rtos_func_t func, char* name, int stacksize, int argc, char* argv[]);
+void RtosInit(void);
+void RtosStart(void);
 void RtosSysdown(void);
 void RtosSyscall(rtos_syscall_type_t type, rtos_syscall_param_t* param);
+void RtosThreadCreate(rtos_func_t func, char* name, int stacksize, int argc, char* argv[]);
 
 // User Thread
 int test08_1_main(int argc, char* argv[]);
