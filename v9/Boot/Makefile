@@ -30,11 +30,12 @@ ifeq "$(strip $(OBJDIR))" ""
 endif
 
 MEMORYMAP = STM32F303K8.ld
-OBJECTNAME = STM
+OBJECTNAME = bootloader
 
 default :
 	@[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
 	@[ -d "$(BINDIR)" ] || mkdir -p $(BINDIR)
+	@[ -d "$(ASMBIN)" ] || mkdir -p $(ASMBIN)
 	@make all --no-print-directory
 
 all: $(OBJECTS) $(OBJECTNAME).elf $(OBJECTNAME).bin
@@ -51,7 +52,7 @@ $(OBJDIR)/%.o: %.c
 $(OBJDIR)/%.o: %.s
 	$(AS) -g $< -o $@
 
-.PHONY: clean st-flash
+.PHONY: clean flash
 
 st-flash: $(OBJECTNAME).bin
 	$(STFLASH) write $(OBJECTNAME).bin 0x8000000

@@ -9,6 +9,9 @@ typedef void (*rtos_handler_t)(void);
 
 typedef enum {
     RTOS_SYSCALL_CHG_UNPRIVILEGE = 0,
+	RTOS_SYSCALL_SLEEP,
+	RTOS_SYSCALL_WAKEUP,
+	RTOS_SYSCALL_CHG_PRIORITY
 }rtos_syscall_type_t;
 
 typedef struct{
@@ -16,6 +19,7 @@ typedef struct{
         struct{
             rtos_func_t func;
             char* name;
+			int priority;
             int stacksize;
             int argc;
             char **argv;
@@ -40,7 +44,7 @@ void RtosInit(void);
 void RtosStart(void);
 void RtosSysdown(void);
 void RtosSyscall(rtos_syscall_type_t type, rtos_syscall_param_t* param);
-void RtosThreadCreate(rtos_func_t func, char* name, int stacksize, int argc, char* argv[]);
+void RtosThreadCreate(rtos_func_t func, char* name, int priority, int stacksize, int argc, char* argv[]);
 
 // User Thread
 int test08_1_main(int argc, char* argv[]);

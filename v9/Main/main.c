@@ -44,9 +44,9 @@ int main(void){
     __enable_irq(); // enable interrupt
 
     RtosInit();
-    RtosThreadCreate((rtos_func_t)test, "test", 0x100, 0, NULL);
-    RtosThreadCreate((rtos_func_t)demo, "demo", 0x100, 0, NULL);
-    RtosThreadCreate((rtos_func_t)proto, "proto", 0x100, 0, NULL);
+    RtosThreadCreate((rtos_func_t)test, "test", 0, 0x100, 0, NULL);
+    RtosThreadCreate((rtos_func_t)demo, "demo", 4, 0x100, 0, NULL);
+    RtosThreadCreate((rtos_func_t)proto, "proto", 8, 0x100, 0, NULL);
 
 	/* OSの動作開始 */  
 	RtosStart();  

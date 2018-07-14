@@ -3,17 +3,23 @@
 #include "rtos.h"
 
 #define THREAD_NUM 3 
+#define PRIORITY_NUM 8
+#define MAX_SYS_TICKS 8
 #define THREAD_NAME_SIZE 15
 
 unsigned char rtos_start = 0;
+unsigned int sticks = 3;
 
+// thread context
 typedef struct _rtos_context{
     uint32_t sp;
 }rtos_context;
 
+// Task Control Block (TCB)
 typedef struct _rtos_thread{
     struct _rtos_thread *next;
     char name[THREAD_NAME_SIZE + 1];
+	int priority;
     char *stack;
     
     struct {
@@ -30,6 +36,7 @@ typedef struct _rtos_thread{
     rtos_context context;
 }rtos_thread;
 
+// Ready Que
 static struct{
     rtos_thread *head;
     rtos_thread *tail;
@@ -59,7 +66,7 @@ static void thread_init(rtos_thread *thp)
     thp->init.func();
 }
 
-static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, int argc, char* argv[])
+static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int priority, int stacksize, int argc, char* argv[])
 {
     int i;
     rtos_thread *thp;
@@ -80,6 +87,7 @@ static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int stacksize, 
     /* set TCB */
     strcpy(thp->name, name);
     thp->next = NULL;
+	thp->priority = priority;
 
     thp->init.func = func;
     thp->init.argc = argc;
@@ -112,17 +120,20 @@ void schedule(void)
     
     current = readyque.head;
 
+	// タイムスライスを優先度に応じて設定
+	sticks = MAX_SYS_TICKS - current->priority;
+
     readyque.head = current->next;
     readyque.tail->next = current;
     readyque.tail = current;
-    readyque.tail->next = NULL;
+    //readyque[i].tail->next = NULL;
 }
 
 void RtosInit(void)
 {
     current = NULL;
 
-    readyque.head = readyque.tail = NULL;
+    memset(&readyque, 0, sizeof(readyque));
     memset(threads, 0, sizeof(threads));
 }
 
@@ -133,9 +144,9 @@ void RtosStart(void)
     __asm volatile ("svc 0");
 }
 
-void RtosThreadCreate(rtos_func_t func, char *name, int stacksize, int argc, char *argv[])
+void RtosThreadCreate(rtos_func_t func, char *name, int priority, int stacksize, int argc, char *argv[])
 {
-    thread_run(func, name, stacksize, argc, argv);
+    thread_run(func, name, priority, stacksize, argc, argv);
 }
 
 void RtosSysdown(void)
@@ -149,11 +160,16 @@ void RtosSyscall(rtos_syscall_type_t type, rtos_syscall_param_t *param)
     current->syscall.type = type;
     current->syscall.param = param;
     
-    
     switch(type){
         case RTOS_SYSCALL_CHG_UNPRIVILEGE:
             __asm volatile ("svc 0");
             break;
+		case RTOS_SYSCALL_SLEEP:
+			break;
+		case RTOS_SYSCALL_WAKEUP:
+			break;
+		case RTOS_SYSCALL_CHG_PRIORITY:
+			break;
         default:
             break;
     }
@@ -186,7 +202,7 @@ void SVC_Handler(void)
                     "movw	r2,#:lower16:current;"
                     "movt	r2,#:upper16:current;"
                     "ldr	r0,[r2,#0];"
-                    "ldr	r2,[r0,#44];"
+                    "ldr	r2,[r0,#48];"
                     "msr    PSP, r2;"
                     "orr    lr, lr, #4;" // Return back to user mode
                  );
@@ -210,7 +226,7 @@ void PendSV_Handler(void)
             "movw	r2,#:lower16:current;"	// *(current->context) = R12;
             "movt	r2,#:upper16:current;"
             "ldr	r0,[r2,#0];"
-            "str	r12,[r0,#44];"
+            "str	r12,[r0,#48];"
          );
 
    // 次スレッドのスケジューリング
@@ -224,7 +240,7 @@ void PendSV_Handler(void)
            "movw	r2,#:lower16:current;"	// R12 = *(current->context);
            "movt	r2,#:upper16:current;"
            "ldr     r0,[r2,#0];"
-           "ldr     r12,[r0,#44];"
+           "ldr     r12,[r0,#48];"
 
            "ldmia	r12!,{r4-r11};"		// R4～R11を復帰
 
@@ -233,14 +249,12 @@ void PendSV_Handler(void)
          );
 }
 
-unsigned int sticks = 3;
 void SysTick_Handler()
 {
 	if (rtos_start) {
 		if (sticks)
 			sticks--;
 		else {
-			sticks = 3;
 			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 		}
 	}
