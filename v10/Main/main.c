@@ -9,10 +9,26 @@
 /* ユーザスレッド */
 static int flash(int argc, char *argv[])
 {  
+    flash_result_t ret;
+
     FlashInit();
-    FlashWrite((uint16_t*)0x08002000, 0xBEEF);
+
+    ret = FlashPageErase((uint8_t*)0x08002000);
+    if(ret != FLASH_RESULT_OK){
+        printf("ERASE ERROR!!\n");
+        return 0;
+    }
+
     printf("0x%X%X\n", FlashRead((uint8_t*)0x08002001), FlashRead((uint8_t*)0x08002000));
-    FlashPageErase((uint8_t*)0x08002000);
+
+    ret = FlashWrite((uint16_t*)0x08002000, 0xBEEF);
+    if(ret != FLASH_RESULT_OK){
+        printf("WRITE ERROR!!\n");
+        return 0;
+    }
+
+    printf("0x%X%X\n", FlashRead((uint8_t*)0x08002001), FlashRead((uint8_t*)0x08002000));
+
 	return 0;
 }
 

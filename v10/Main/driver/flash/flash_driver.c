@@ -22,6 +22,10 @@ uint8_t FlashRead(uint8_t* address)
 
 flash_result_t FlashWrite(uint16_t* address, uint16_t data)
 {
+    if(ReadBit(&flashAddress->CR, FLASH_CR_LOCK)){
+        return FLASH_RESULT_NG;
+    }
+
     while(ReadBit(&flashAddress->SR, FLASH_SR_BSY));
 
     SetBit(&flashAddress->CR, FLASH_CR_PG);
@@ -41,6 +45,10 @@ flash_result_t FlashWrite(uint16_t* address, uint16_t data)
 
 flash_result_t FlashPageErase(uint8_t* address)
 {
+    if(ReadBit(&flashAddress->CR, FLASH_CR_LOCK)){
+        return FLASH_RESULT_NG;
+    }
+
     while(ReadBit(&flashAddress->SR, FLASH_SR_BSY));
 
     SetBit(&flashAddress->CR, FLASH_CR_PER);
@@ -56,6 +64,7 @@ flash_result_t FlashPageErase(uint8_t* address)
     }
 
     ClearBit(&flashAddress->SR, FLASH_SR_EOP);
+
 	return FLASH_RESULT_OK;
 }
 
