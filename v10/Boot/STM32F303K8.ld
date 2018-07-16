@@ -66,7 +66,7 @@ MEMORY
     RAM_WORK (rw)  	: ORIGIN = 0x20001400, LENGTH = 0x00001C00 /* 7KB */
     CCMRAM (rw)     : ORIGIN = 0x10000000, LENGTH = 0x00001000 /* 4KB */
     FLASH_BOOT (rx) : ORIGIN = 0x08000000, LENGTH = 0x00002000 /* 8KB */
-    FLASH_MAIN (rx) : ORIGIN = 0x08002000, LENGTH = 0x0000E000 /* 56KB */
+    FLASH_MAIN (rw) : ORIGIN = 0x08002000, LENGTH = 0x0000E000 /* 56KB */
 }
 
 /* Define output sections */
@@ -138,6 +138,12 @@ SECTIONS
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
   } >FLASH_BOOT
+
+  .flash_main :
+  {
+  } >FLASH_MAIN
+  _FLASH_MAIN_ADDR = ADDR(.flash_main);
+  _FLASH_MAIN_SIZE = LENGTH(FLASH_MAIN);
 
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
@@ -212,3 +218,4 @@ SECTIONS
 
   _MAIN_CODE_ADDR = ADDR(.code);
 }
+

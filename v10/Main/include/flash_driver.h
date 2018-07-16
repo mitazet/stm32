@@ -3,6 +3,8 @@
 
 #include "stm32f303x8.h"
 
+#define FLASH_PAGE_SIZE_BYTE 2048
+
 typedef enum{
     FLASH_RESULT_NG,
     FLASH_RESULT_OK,

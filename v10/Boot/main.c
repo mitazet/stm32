@@ -2,13 +2,16 @@
 #include "printf.h"
 #include "lib.h"
 #include "xmodem.h"
+#include "flash_driver.h"
 
 extern void _MAIN_CODE_ADDR();
+extern int  _FLASH_MAIN_ADDR;
+extern int  _FLASH_MAIN_SIZE;
 
 static int dump(char* buf, long size)
 {
     long i;
-
+    
     if(size < 0){
        printf("no data.\n");
        return -1; 
@@ -25,6 +28,62 @@ static int dump(char* buf, long size)
     printf("\n");
 
     return 0;
+}
+
+static int erase_code(void)
+{
+    uint8_t* flash_addr = (uint8_t*)&_FLASH_MAIN_ADDR;
+    uint32_t page_num_code = _FLASH_MAIN_SIZE / FLASH_PAGE_SIZE_BYTE; 
+    
+    printf("Code Area Address: 0x%X\n", flash_addr);
+    printf("Page num of Code Area: %u\n", page_num_code);
+
+    for(uint32_t i=0; i < page_num_code; i++){
+        if(FlashPageErase(flash_addr) != FLASH_RESULT_OK){
+            printf("erase error occured!!\n");
+            return -1;
+        }
+
+        flash_addr += FLASH_PAGE_SIZE_BYTE;
+    }
+}
+
+static int write_code(char* buf, long size)
+{
+    long i;
+
+    if(size < 0){
+        printf("no data.\n");
+        return -1;
+    }
+    
+    uint16_t* flash_addr    = (uint16_t*)&_FLASH_MAIN_ADDR;
+    uint16_t* data_addr     = (uint16_t*)buf;
+
+    erase_code();
+
+    for(i=0; i<size; i++){
+        if(FlashWrite(flash_addr, *data_addr) != FLASH_RESULT_OK){
+            printf("write error occured!!\n");
+            return -1;
+        }
+
+        flash_addr++;
+        data_addr++;
+    }
+
+    return 0;
+}
+
+static void load_code(char *buf)
+{
+    uint8_t* flash_addr = (uint8_t*)&_FLASH_MAIN_ADDR;
+
+    for(uint32_t i=0; i<_FLASH_MAIN_SIZE; i++){
+        *buf = FlashRead(flash_addr);
+        buf++;
+        flash_addr++;
+    }
 }
 
 static void wait()
@@ -52,7 +111,7 @@ int main(void)
         printf("zload> ");
         gets(buf);
 
-        if(!strcmp(buf, "load")){
+        if(!strcmp(buf, "loadx")){
             loadbuf = (char*)(&_app_vector);
             size = XmodemRecv(loadbuf);
             wait();
@@ -61,9 +120,19 @@ int main(void)
             }else{
                 printf("\nXMODEM receive succeeded.\n");
             }
+        }else if(!strcmp(buf, "loadf")){
+            loadbuf = (char*)(&_app_vector);
+            load_code(loadbuf);
         }else if(!strcmp(buf, "dump")){
             printf("size: %d\n", size);
             dump(loadbuf, size);
+        }else if(!strcmp(buf, "write")){
+            int write_result = write_code(loadbuf, size);
+            if(write_result != 0){
+                printf("\nWrite Code error!\n");
+            }else{
+                printf("\nWrite Code is succeeded.\n");
+            }
         }else if(!strcmp(buf, "run")){
             _MAIN_CODE_ADDR();
         }else{
