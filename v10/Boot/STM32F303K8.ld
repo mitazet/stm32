@@ -143,7 +143,6 @@ SECTIONS
   {
   } >FLASH_MAIN
   _FLASH_MAIN_ADDR = ADDR(.flash_main);
-  _FLASH_MAIN_SIZE = LENGTH(FLASH_MAIN);
 
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);

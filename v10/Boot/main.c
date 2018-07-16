@@ -4,9 +4,10 @@
 #include "xmodem.h"
 #include "flash_driver.h"
 
+#define  MAIN_CODE_SIZE 0x00002200 //RAM_CODE + RAM_WORK - heap_stack
+
 extern void _MAIN_CODE_ADDR();
 extern int  _FLASH_MAIN_ADDR;
-extern int  _FLASH_MAIN_SIZE;
 
 static int dump(char* buf, long size)
 {
@@ -33,7 +34,7 @@ static int dump(char* buf, long size)
 static int erase_code(void)
 {
     uint8_t* flash_addr = (uint8_t*)&_FLASH_MAIN_ADDR;
-    uint32_t page_num_code = _FLASH_MAIN_SIZE / FLASH_PAGE_SIZE_BYTE; 
+    uint32_t page_num_code = MAIN_CODE_SIZE / FLASH_PAGE_SIZE_BYTE + 1; 
     
     printf("Code Area Address: 0x%X\n", flash_addr);
     printf("Page num of Code Area: %u\n", page_num_code);
@@ -46,6 +47,8 @@ static int erase_code(void)
 
         flash_addr += FLASH_PAGE_SIZE_BYTE;
     }
+
+    return 0;
 }
 
 static int write_code(char* buf, long size)
@@ -60,7 +63,11 @@ static int write_code(char* buf, long size)
     uint16_t* flash_addr    = (uint16_t*)&_FLASH_MAIN_ADDR;
     uint16_t* data_addr     = (uint16_t*)buf;
 
-    erase_code();
+    FlashInit();
+
+    if(erase_code() != 0){
+        return -1;
+    }
 
     for(i=0; i<size; i++){
         if(FlashWrite(flash_addr, *data_addr) != FLASH_RESULT_OK){
@@ -79,7 +86,7 @@ static void load_code(char *buf)
 {
     uint8_t* flash_addr = (uint8_t*)&_FLASH_MAIN_ADDR;
 
-    for(uint32_t i=0; i<_FLASH_MAIN_SIZE; i++){
+    for(uint32_t i=0; i<MAIN_CODE_SIZE; i++){
         *buf = FlashRead(flash_addr);
         buf++;
         flash_addr++;
