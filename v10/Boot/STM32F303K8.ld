@@ -72,7 +72,7 @@ MEMORY
 
 _app_vector = ORIGIN(RAM_VECTOR);
 _flash_code = ORIGIN(FLASH_CODE);
-_main_code_size = ORIGIN(RAM_VECTOR) + LENGTH(RAM_VECTOR) + LENGTH(RAM_CODE) + LENGTH(RAM_WORK) - (_Min_Heap_Size + _Min_Stack_Size);
+_main_code_size = LENGTH(RAM_VECTOR) + LENGTH(RAM_CODE) + LENGTH(RAM_WORK) - (_Min_Heap_Size + _Min_Stack_Size);
 _main_code = ORIGIN(RAM_CODE);
 
 _flash_addr = ORIGIN(FLASH_CODE);

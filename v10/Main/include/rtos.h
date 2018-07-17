@@ -9,9 +9,9 @@ typedef void (*rtos_handler_t)(void);
 
 typedef enum {
     RTOS_SYSCALL_CHG_UNPRIVILEGE = 0,
-	RTOS_SYSCALL_SLEEP,
-	RTOS_SYSCALL_WAKEUP,
-	RTOS_SYSCALL_CHG_PRIORITY
+    RTOS_SYSCALL_SLEEP,
+    RTOS_SYSCALL_WAKEUP,
+    RTOS_SYSCALL_CHG_PRIORITY
 }rtos_syscall_type_t;
 
 typedef struct{
@@ -19,7 +19,7 @@ typedef struct{
         struct{
             rtos_func_t func;
             char* name;
-			int priority;
+            int priority;
             int stacksize;
             int argc;
             char **argv;

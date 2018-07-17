@@ -86,7 +86,7 @@ static int write_code(char* buf, long size)
 static void load_code(char *buf)
 {
     uint8_t* flash_addr = (uint8_t*)&_flash_code;
-	uint32_t main_code_size = (uint32_t)&_main_code_size;
+    uint32_t main_code_size = (uint32_t)&_main_code_size;
 
     for(uint32_t i=0; i<main_code_size; i++){
         *buf = FlashRead(flash_addr);
@@ -149,5 +149,5 @@ int main(void)
         }
     }
 
-	return 0;
+    return 0;
 }

@@ -23,10 +23,10 @@ $(TESTNAME): $(OBJECTS)
 	g++ -o $(TESTNAME) test_flash.cpp $(GTEST_DIR)/googletest/googletest/src/gtest_main.cc $(GTEST_DIR)/gmock-gtest-all.cc $(INCLUDE) -lpthread $(OBJECTS) -D DEBUG_GTEST
 
 $(OBJECTS): $(SRCS)
-	gcc -c $(SRCS) $(INCLUDE) -DEBUG_GTEST
+	gcc -c $(SRCS) $(INCLUDE) -D DEBUG_GTEST
 
 clean:
 	rm *.o $(TESTNAME)
 
 gtest-gen:
-	python $(GTEST_DIR)/googletest/googlemock/scripts/fuse_gmock_files.py $(GTEST_DIR) 
+	python3 $(GTEST_DIR)/googletest/googlemock/scripts/fuse_gmock_files.py $(GTEST_DIR) 

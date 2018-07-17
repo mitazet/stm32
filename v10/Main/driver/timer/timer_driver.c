@@ -11,9 +11,9 @@ static IRQn_Type IRQ_num = TIM6_DAC1_IRQn;
 void (*TimerTimeupFunction)(void) = NULL;
 
 void TimerCreate(RCC_TypeDef* rcc_addr, TIM_TypeDef* tim_addr, int irq_num){
-    RCC_ref	= rcc_addr;
-    TIM_ref	= tim_addr;
-    IRQ_num	= irq_num;
+    RCC_ref = rcc_addr;
+    TIM_ref = tim_addr;
+    IRQ_num = irq_num;
 }
 
 void TIM6_DAC1_IRQHandler()

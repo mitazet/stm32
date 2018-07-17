@@ -19,7 +19,7 @@ typedef struct _rtos_context{
 typedef struct _rtos_thread{
     struct _rtos_thread *next;
     char name[THREAD_NAME_SIZE + 1];
-	int priority;
+    int priority;
     char *stack;
     
     struct {
@@ -87,7 +87,7 @@ static rtos_thread_id_t thread_run(rtos_func_t func, char* name, int priority, i
     /* set TCB */
     strcpy(thp->name, name);
     thp->next = NULL;
-	thp->priority = priority;
+    thp->priority = priority;
 
     thp->init.func = func;
     thp->init.argc = argc;
@@ -120,8 +120,8 @@ void schedule(void)
     
     current = readyque.head;
 
-	// タイムスライスを優先度に応じて設定
-	sticks = MAX_SYS_TICKS - current->priority;
+    // タイムスライスを優先度に応じて設定
+    sticks = MAX_SYS_TICKS - current->priority;
 
     readyque.head = current->next;
     readyque.tail->next = current;
@@ -140,7 +140,7 @@ void RtosInit(void)
 void RtosStart(void)
 {
     /* run first thread */
-	current->context.sp = (uint32_t)((uint32_t*)current->context.sp + 8);
+    current->context.sp = (uint32_t)((uint32_t*)current->context.sp + 8);
     __asm volatile ("svc 0");
 }
 
@@ -164,12 +164,12 @@ void RtosSyscall(rtos_syscall_type_t type, rtos_syscall_param_t *param)
         case RTOS_SYSCALL_CHG_UNPRIVILEGE:
             __asm volatile ("svc 0");
             break;
-		case RTOS_SYSCALL_SLEEP:
-			break;
-		case RTOS_SYSCALL_WAKEUP:
-			break;
-		case RTOS_SYSCALL_CHG_PRIORITY:
-			break;
+        case RTOS_SYSCALL_SLEEP:
+            break;
+        case RTOS_SYSCALL_WAKEUP:
+            break;
+        case RTOS_SYSCALL_CHG_PRIORITY:
+            break;
         default:
             break;
     }
@@ -180,29 +180,29 @@ void SVC_Handler(void) __attribute__ ((naked));
 void SVC_Handler(void)
 {
     __asm(
-            "mov	r0,lr;"		// if ((R0 = LR & 0x04) != 0) {
-            "ands	r0,#4;" 	//			// LRのビット4が'0'ならハンドラモードでSVC
-            "beq	.L0000;"	//			// '1'ならスレッドモードでSVC
-            "mrs	r1,psp;"	// 	R1 = PSP;	// プロセススタックをコピー
-            "b		.L0001;"	//
-            ".L0000:;"			// } else {
-            "mrs	r1,msp;"	//	R1 = MSP;	// メインスタックをコピー
-            ".L0001:;"			// }
-            "ldr	r2,[r1,#24];"	// R2 = R1->PC;
-            "ldr	r0,[r2,#-2];"	// R0 = *(R2-2);	// SVC(SWI)命令の下位バイトが引数部分
+            "mov    r0,lr;"     // if ((R0 = LR & 0x04) != 0) {
+            "ands   r0,#4;"     //          // LRのビット4が'0'ならハンドラモードでSVC
+            "beq    .L0000;"    //          // '1'ならスレッドモードでSVC
+            "mrs    r1,psp;"    //  R1 = PSP;   // プロセススタックをコピー
+            "b      .L0001;"    //
+            ".L0000:;"          // } else {
+            "mrs    r1,msp;"    //  R1 = MSP;   // メインスタックをコピー
+            ".L0001:;"          // }
+            "ldr    r2,[r1,#24];"   // R2 = R1->PC;
+            "ldr    r0,[r2,#-2];"   // R0 = *(R2-2);    // SVC(SWI)命令の下位バイトが引数部分
 
-            "movw	r2,#:lower16:svcop;"	// svcop = R0;		// svcop変数にコピー
-            "movt	r2,#:upper16:svcop;"
-            "str	r0,[r2,#0];"
+            "movw   r2,#:lower16:svcop;"    // svcop = R0;      // svcop変数にコピー
+            "movt   r2,#:upper16:svcop;"
+            "str    r0,[r2,#0];"
          );
 
     switch(svcop & 0xff){
         case RTOS_SYSCALL_CHG_UNPRIVILEGE:
             __asm(
-                    "movw	r2,#:lower16:current;"
-                    "movt	r2,#:upper16:current;"
-                    "ldr	r0,[r2,#0];"
-                    "ldr	r2,[r0,#48];"
+                    "movw   r2,#:lower16:current;"
+                    "movt   r2,#:upper16:current;"
+                    "ldr    r0,[r2,#0];"
+                    "ldr    r2,[r0,#48];"
                     "msr    PSP, r2;"
                     "orr    lr, lr, #4;" // Return back to user mode
                  );
@@ -220,13 +220,13 @@ void SVC_Handler(void)
 void PendSV_Handler(void) __attribute__ ((naked));
 void PendSV_Handler(void)
 {
-    __asm(						// R12をワーク用スタックとして利用
-            "mrs	r12,psp;"			// R12にPSPの値をコピー
-            "stmdb	r12!,{r4-r11};"		// 自動退避されないR4～R11を退避
-            "movw	r2,#:lower16:current;"	// *(current->context) = R12;
-            "movt	r2,#:upper16:current;"
-            "ldr	r0,[r2,#0];"
-            "str	r12,[r0,#48];"
+    __asm(                      // R12をワーク用スタックとして利用
+            "mrs    r12,psp;"           // R12にPSPの値をコピー
+            "stmdb  r12!,{r4-r11};"     // 自動退避されないR4～R11を退避
+            "movw   r2,#:lower16:current;"  // *(current->context) = R12;
+            "movt   r2,#:upper16:current;"
+            "ldr    r0,[r2,#0];"
+            "str    r12,[r0,#48];"
          );
 
    // 次スレッドのスケジューリング
@@ -237,25 +237,25 @@ void PendSV_Handler(void)
         );
 
    __asm (
-           "movw	r2,#:lower16:current;"	// R12 = *(current->context);
-           "movt	r2,#:upper16:current;"
+           "movw    r2,#:lower16:current;"  // R12 = *(current->context);
+           "movt    r2,#:upper16:current;"
            "ldr     r0,[r2,#0];"
            "ldr     r12,[r0,#48];"
 
-           "ldmia	r12!,{r4-r11};"		// R4～R11を復帰
+           "ldmia   r12!,{r4-r11};"     // R4～R11を復帰
 
-           "msr     psp,r12;"			// PSP = R12;
-           "bx		lr;"				// (RETURN)
+           "msr     psp,r12;"           // PSP = R12;
+           "bx      lr;"                // (RETURN)
          );
 }
 
 void SysTick_Handler()
 {
-	if (rtos_start) {
-		if (sticks)
-			sticks--;
-		else {
-			SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
-		}
-	}
+    if (rtos_start) {
+        if (sticks)
+            sticks--;
+        else {
+            SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+        }
+    }
 }
