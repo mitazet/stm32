@@ -4,19 +4,25 @@
 #include <stdbool.h>
 #include "printf.h"
 
+
+// Default:FLASH
+static FLASH_TypeDef* flashAddress = FLASH;
+#ifdef DEBUG_GTEST
+static uint32_t flashStart;
+static uint32_t flashEnd;
+#else
 // from Linker Script
 extern int _flash_addr;
 extern int _flash_size;
 
-// Default:FLASH
-static FLASH_TypeDef* flashAddress = FLASH;
+static uint32_t flashStart = (uint32_t)&_flash_addr;
+static uint32_t flashEnd   = (uint32_t)&_flash_addr + (uint32_t)&_flash_size;
+#endif
+
 
 static bool is_flash_area(uint32_t address, uint32_t size)
 {
-	uint32_t flash_start = (uint32_t)&_flash_addr;
-	uint32_t flash_end   = (uint32_t)&_flash_addr + (uint32_t)&_flash_size;
-
-	if((address < flash_start) || (address + size > flash_end)){
+	if((address < flashStart) || (address + size > flashEnd)){
 		return false;
 	}
 	return true;
@@ -68,9 +74,11 @@ static void flash_page_erase(uint8_t* address)
     SetBit(&flashAddress->CR, FLASH_CR_STRT);
 }
 
-void FlashCreate(FLASH_TypeDef* flash_address)
+void FlashCreate(FLASH_TypeDef* flash_address, uint32_t start_address, uint32_t end_address)
 {
     flashAddress = flash_address;
+	flashStart = start_address;
+	flashEnd = end_address;
 }
 
 void FlashInit(void)
