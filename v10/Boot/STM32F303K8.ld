@@ -65,9 +65,18 @@ MEMORY
     RAM_CODE (xrw) 	: ORIGIN = 0x20000400, LENGTH = 0x00001000 /* 4KB */
     RAM_WORK (rw)  	: ORIGIN = 0x20001400, LENGTH = 0x00001C00 /* 7KB */
     CCMRAM (rw)     : ORIGIN = 0x10000000, LENGTH = 0x00001000 /* 4KB */
-    FLASH_BOOT (rx) : ORIGIN = 0x08000000, LENGTH = 0x00002000 /* 8KB */
-    FLASH_MAIN (rw) : ORIGIN = 0x08002000, LENGTH = 0x0000E000 /* 56KB */
+    FLASH_BOOT (xr) : ORIGIN = 0x08000000, LENGTH = 0x00002000 /* 8KB */
+    FLASH_CODE (rw) : ORIGIN = 0x08002000, LENGTH = 0x00004000 /* 16KB */
+    FLASH_DATA (rw) : ORIGIN = 0x08006000, LENGTH = 0x0000A000 /* 40KB */
 }
+
+_app_vector = ORIGIN(RAM_VECTOR);
+_flash_code = ORIGIN(FLASH_CODE);
+_main_code_size = ORIGIN(RAM_VECTOR) + LENGTH(RAM_VECTOR) + LENGTH(RAM_CODE) + LENGTH(RAM_WORK) - (_Min_Heap_Size + _Min_Stack_Size);
+_main_code = ORIGIN(RAM_CODE);
+
+_flash_addr = ORIGIN(FLASH_CODE);
+_flash_size = LENGTH(FLASH_CODE) + LENGTH(FLASH_DATA);
 
 /* Define output sections */
 SECTIONS
@@ -79,11 +88,6 @@ SECTIONS
         KEEP(*(.isr_vector)) /* Startup code */
         . = ALIGN(4);
     } >FLASH_BOOT
-
-  .app_vector :
-  {
-    _app_vector = .;       /* create a global symbol at common */
-  } >RAM_VECTOR
 
   /* The program code and other data goes into FLASH */
   .text :
@@ -138,11 +142,6 @@ SECTIONS
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
   } >FLASH_BOOT
-
-  .flash_main :
-  {
-  } >FLASH_MAIN
-  _FLASH_MAIN_ADDR = ADDR(.flash_main);
 
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
@@ -209,12 +208,5 @@ SECTIONS
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
-  /* buffer section */
-  . = ALIGN(4);
-  .code :
-  {
-  } >RAM_CODE
-
-  _MAIN_CODE_ADDR = ADDR(.code);
 }
 

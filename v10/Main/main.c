@@ -13,21 +13,21 @@ static int flash(int argc, char *argv[])
 
     FlashInit();
 
-    ret = FlashPageErase((uint8_t*)0x0807F800);
+    ret = FlashPageErase((uint8_t*)0x0800F800);
     if(ret != FLASH_RESULT_OK){
         printf("ERASE ERROR!!\n");
         return 0;
     }
 
-    printf("0x%X%X\n", FlashRead((uint8_t*)0x0807F801), FlashRead((uint8_t*)0x0807F800));
+    printf("0x%X%X\n", FlashRead((uint8_t*)0x0800F801), FlashRead((uint8_t*)0x0800F800));
 
-    ret = FlashWrite((uint16_t*)0x0807F800, 0xBEEF);
+    ret = FlashWrite((uint16_t*)0x0800F800, 0xBEEF);
     if(ret != FLASH_RESULT_OK){
         printf("WRITE ERROR!!\n");
         return 0;
     }
 
-    printf("0x%X%X\n", FlashRead((uint8_t*)0x0807F801), FlashRead((uint8_t*)0x0807F800));
+    printf("0x%X%X\n", FlashRead((uint8_t*)0x0800F801), FlashRead((uint8_t*)0x0800F800));
 
 	return 0;
 }

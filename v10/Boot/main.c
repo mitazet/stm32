@@ -4,10 +4,11 @@
 #include "xmodem.h"
 #include "flash_driver.h"
 
-#define  MAIN_CODE_SIZE 0x00002200 //RAM_CODE + RAM_WORK - heap_stack
 
-extern void _MAIN_CODE_ADDR();
-extern int  _FLASH_MAIN_ADDR;
+// form Linker Script
+extern void _main_code();
+extern int  _flash_code;
+extern int  _main_code_size;
 
 static int dump(char* buf, long size)
 {
@@ -33,8 +34,8 @@ static int dump(char* buf, long size)
 
 static int erase_code(void)
 {
-    uint8_t* flash_addr = (uint8_t*)&_FLASH_MAIN_ADDR;
-    uint32_t page_num_code = MAIN_CODE_SIZE / FLASH_PAGE_SIZE_BYTE + 1; 
+    uint8_t* flash_addr = (uint8_t*)&_flash_code;
+    uint32_t page_num_code = (uint32_t)&_main_code_size / FLASH_PAGE_SIZE_BYTE + 1; 
     
     printf("Code Area Address: 0x%X\n", flash_addr);
     printf("Page num of Code Area: %u\n", page_num_code);
@@ -60,7 +61,7 @@ static int write_code(char* buf, long size)
         return -1;
     }
     
-    uint16_t* flash_addr    = (uint16_t*)&_FLASH_MAIN_ADDR;
+    uint16_t* flash_addr    = (uint16_t*)&_flash_code;
     uint16_t* data_addr     = (uint16_t*)buf;
 
     FlashInit();
@@ -84,9 +85,10 @@ static int write_code(char* buf, long size)
 
 static void load_code(char *buf)
 {
-    uint8_t* flash_addr = (uint8_t*)&_FLASH_MAIN_ADDR;
+    uint8_t* flash_addr = (uint8_t*)&_flash_code;
+	uint32_t main_code_size = (uint32_t)&_main_code_size;
 
-    for(uint32_t i=0; i<MAIN_CODE_SIZE; i++){
+    for(uint32_t i=0; i<main_code_size; i++){
         *buf = FlashRead(flash_addr);
         buf++;
         flash_addr++;
@@ -106,7 +108,7 @@ int main(void)
     static char buf[16];
     static long size = -1;
     static unsigned char *loadbuf = NULL;
-    extern int _app_vector;
+    extern int _app_vector; // from Linker Script
     
     __disable_irq(); // disable interrupt
 
@@ -141,7 +143,7 @@ int main(void)
                 printf("\nWrite Code is succeeded.\n");
             }
         }else if(!strcmp(buf, "run")){
-            _MAIN_CODE_ADDR();
+            _main_code();
         }else{
             printf("unknown.\n");
         }
