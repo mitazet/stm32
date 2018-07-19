@@ -87,9 +87,9 @@ class FlashTest : public ::testing::Test {
         {
             mock = new MockIo();
             virtualFlash = new FLASH_TypeDef();
-			virtualAddress = new uint8_t[100];
-			virtualStart = (uint32_t)&virtualAddress[0];
-			virtualEnd = (uint32_t)&virtualAddress[100]; // 範囲外のアドレスを取得
+            virtualAddress = new uint8_t[100];
+            virtualStart = (uint32_t)&virtualAddress[0];
+            virtualEnd = (uint32_t)&virtualAddress[100]; // 範囲外のアドレスを取得
             FlashCreate(virtualFlash, virtualStart, virtualEnd);
         }
         // SetUpと同様にテストケース実行後に呼ばれる関数。共通後始末を記述する。
@@ -110,7 +110,7 @@ TEST_F(FlashTest, Init)
 
     FlashInit();
 
-	EXPECT_EQ(FLASH_KEY2, virtualFlash->KEYR);
+    EXPECT_EQ(FLASH_KEY2, virtualFlash->KEYR);
 }
 
 
@@ -118,26 +118,26 @@ TEST_F(FlashTest, ReadOK)
 {
     mock->DelegateToVirtual();
 
-	virtualAddress[30] = 0xDE;
+    virtualAddress[30] = 0xDE;
 
     EXPECT_EQ(0xDE, FlashRead(&virtualAddress[30]));
 }
 
 TEST_F(FlashTest, ReadNG_ADDR)
 {
-	EXPECT_EQ(FLASH_RESULT_NG, FlashRead(&virtualAddress[100]));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashRead(&virtualAddress[100]));
 }
 
 using ::testing::Return;
 
 TEST_F(FlashTest, WriteOK)
 {
-	mock->DelegateToVirtual();
+    mock->DelegateToVirtual();
 
-	virtualAddress[0] = 0;
-	virtualAddress[1] = 0;
-	uint16_t* dummy = (uint16_t*)&virtualAddress[0];
-	uint16_t data = 0xBEEF;
+    virtualAddress[0] = 0;
+    virtualAddress[1] = 0;
+    uint16_t* dummy = (uint16_t*)&virtualAddress[0];
+    uint16_t data = 0xBEEF;
 
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->CR, FLASH_CR_LOCK)).WillOnce(Return(0));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(FLASH_SR_BSY));
@@ -147,18 +147,18 @@ TEST_F(FlashTest, WriteOK)
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(0));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_EOP)).WillOnce(Return(FLASH_SR_EOP));
     EXPECT_CALL(*mock, ClearBit(&virtualFlash->SR, FLASH_SR_EOP));
-	
-	EXPECT_EQ(FLASH_RESULT_OK, FlashWrite(dummy, data));
+    
+    EXPECT_EQ(FLASH_RESULT_OK, FlashWrite(dummy, data));
 
-	EXPECT_EQ(*dummy, data);
+    EXPECT_EQ(*dummy, data);
 }
 
 TEST_F(FlashTest, WriteNG_EOP)
 {
-	mock->DelegateToVirtual();
+    mock->DelegateToVirtual();
 
-	uint16_t* dummy = (uint16_t*)&virtualAddress[0];
-	uint16_t data = 0xBEEF;
+    uint16_t* dummy = (uint16_t*)&virtualAddress[0];
+    uint16_t data = 0xBEEF;
 
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->CR, FLASH_CR_LOCK)).WillOnce(Return(0));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(FLASH_SR_BSY));
@@ -167,64 +167,64 @@ TEST_F(FlashTest, WriteNG_EOP)
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(FLASH_SR_BSY));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(0));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_EOP)).WillOnce(Return(0));
-	
-	EXPECT_EQ(FLASH_RESULT_NG, FlashWrite(dummy, data));
+    
+    EXPECT_EQ(FLASH_RESULT_NG, FlashWrite(dummy, data));
 }
 
 TEST_F(FlashTest, WriteNG_ADDR)
 {
-	mock->DelegateToVirtual();
+    mock->DelegateToVirtual();
 
-	uint16_t* dummy = (uint16_t*)&virtualAddress[99];
-	uint16_t data = 0xBEEF;
+    uint16_t* dummy = (uint16_t*)&virtualAddress[99];
+    uint16_t data = 0xBEEF;
 
-	EXPECT_EQ(FLASH_RESULT_NG, FlashWrite(dummy, data));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashWrite(dummy, data));
 }
 
 TEST_F(FlashTest, PageEraseOK)
 {
-	mock->DelegateToVirtual();
+    mock->DelegateToVirtual();
 
-	uint8_t *dummy = &virtualAddress[99];
+    uint8_t *dummy = &virtualAddress[99];
 
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->CR, FLASH_CR_LOCK)).WillOnce(Return(0));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(FLASH_SR_BSY));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(0));
     EXPECT_CALL(*mock, SetBit(&virtualFlash->CR, FLASH_CR_PER));
-	EXPECT_CALL(*mock, WriteReg(&virtualFlash->AR, (uint32_t)dummy));
+    EXPECT_CALL(*mock, WriteReg(&virtualFlash->AR, (uint32_t)dummy));
     EXPECT_CALL(*mock, SetBit(&virtualFlash->CR, FLASH_CR_STRT));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(FLASH_SR_BSY));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(0));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_EOP)).WillOnce(Return(FLASH_SR_EOP));
     EXPECT_CALL(*mock, ClearBit(&virtualFlash->SR, FLASH_SR_EOP));
 
-	EXPECT_EQ(FLASH_RESULT_OK, FlashPageErase(dummy));
+    EXPECT_EQ(FLASH_RESULT_OK, FlashPageErase(dummy));
 }
 
 TEST_F(FlashTest, PageEraseNG_EOP)
 {
-	mock->DelegateToVirtual();
+    mock->DelegateToVirtual();
 
-	uint8_t *dummy = &virtualAddress[99];
+    uint8_t *dummy = &virtualAddress[99];
 
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->CR, FLASH_CR_LOCK)).WillOnce(Return(0));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(FLASH_SR_BSY));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(0));
     EXPECT_CALL(*mock, SetBit(&virtualFlash->CR, FLASH_CR_PER));
-	EXPECT_CALL(*mock, WriteReg(&virtualFlash->AR, (uint32_t)dummy));
+    EXPECT_CALL(*mock, WriteReg(&virtualFlash->AR, (uint32_t)dummy));
     EXPECT_CALL(*mock, SetBit(&virtualFlash->CR, FLASH_CR_STRT));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(FLASH_SR_BSY));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(0));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_EOP)).WillOnce(Return(0));
 
-	EXPECT_EQ(FLASH_RESULT_NG, FlashPageErase(dummy));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashPageErase(dummy));
 }
 
 TEST_F(FlashTest, PageEraseNG_ADDR)
 {
-	mock->DelegateToVirtual();
+    mock->DelegateToVirtual();
 
-	uint8_t *dummy = &virtualAddress[100];
+    uint8_t *dummy = &virtualAddress[100];
 
-	EXPECT_EQ(FLASH_RESULT_NG, FlashPageErase(dummy));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashPageErase(dummy));
 }
