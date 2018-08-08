@@ -34,7 +34,7 @@ OBJECTNAME = bootloader
 default :
 	@make all --no-print-directory
 
-all: test $(BUILD_DIR)/$(OBJECTNAME).bin
+all: $(BUILD_DIR)/$(OBJECTNAME).bin
 
 $(BUILD_DIR)/$(OBJECTNAME).bin: $(BUILD_DIR)/$(OBJECTNAME).elf
 	$(OBJCOPY) $(BUILD_DIR)/$(OBJECTNAME).elf -I ihex -O binary $(BUILD_DIR)/$(OBJECTNAME).bin

@@ -2,7 +2,7 @@
 #include "lib.h"
 
 typedef void (*putcf)(char);
-static putcf stdout_putf = myputc;
+static putcf stdout_putf = NULL;
 
 #ifdef PRINTF_LONG_SUPPORT
 

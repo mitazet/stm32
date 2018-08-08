@@ -1,12 +1,24 @@
 #include "lib.h"
-#include "usart_driver.h"
+
+static putcf stdout_putf = NULL;
+static getcf stdin_getf = NULL;
+
+void init_myputc(void (*putf)(char))
+{
+    stdout_putf = putf;
+}
+
+void init_mygetc(char (*getf)(void))
+{
+    stdin_getf = getf;
+}
 
 char mygetc(void)
 {
-    char c = UsartRead();
+    char c = stdin_getf();
     c = (c == '\r') ? '\n' : c;
 
-    myputc(c);
+    stdout_putf(c);
 
     return c;
 }
@@ -14,9 +26,9 @@ char mygetc(void)
 void myputc(char c)
 {
     if(c == '\n'){
-        UsartWrite('\r');
+        stdout_putf('\r');
     }
-    UsartWrite(c);
+    stdout_putf(c);
 }
 
 int gets(char* buf)

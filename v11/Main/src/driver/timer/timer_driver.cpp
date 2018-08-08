@@ -5,7 +5,7 @@
 
 void (*TimerTimeupFunction)(void) = NULL;
 
-extern void TIM6_DAC1_IRQHandler()
+extern "C" void TIM6_DAC1_IRQHandler()
 {
     if(TimerTimeupFunction != NULL){
         TimerTimeupFunction();
@@ -73,8 +73,8 @@ void TimerDriver::StartTimer_msec(int timeout_msec)
     SetBit(&tim_ref_->DIER, TIM_DIER_UIE);
 }
 
-// add timer counting by seconds
-int TimerDriver::Add_sec(int timeout_sec, void (*function)(void))
+// start timer counting by seconds
+int TimerDriver::Start_sec(int timeout_sec, void (*function)(void))
 {
     if(timeout_sec > 80){
         return -1;
@@ -87,8 +87,8 @@ int TimerDriver::Add_sec(int timeout_sec, void (*function)(void))
     return 0;
 }
 
-// add timer counting by milliseconds
-int TimerDriver::Add_msec(int timeout_msec, void (*function)(void))
+// start timer counting by milliseconds
+int TimerDriver::Start_msec(int timeout_msec, void (*function)(void))
 {
     if(timeout_msec > 8000){
         return -1;

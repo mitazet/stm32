@@ -7,6 +7,11 @@ extern "C" {
 
 #include <stddef.h>
 
+typedef void (*putcf)(char);
+typedef char (*getcf)(void);
+
+extern void init_myputc(void (*putf)(char));
+extern void init_mygetc(char (*getf)(void));
 extern char mygetc(void);
 extern void myputc(char c);
 extern int gets(char *buf);

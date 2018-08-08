@@ -1,6 +1,7 @@
 #include "rtos.h"
-#include "timer_driver.h"
 #include <stdlib.h>
+
+extern void TIM6_DAC1_IRQHandler(void);
 
 void (*vectors[])(void)
     __attribute__ ((section (".app_vector")));

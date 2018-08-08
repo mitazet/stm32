@@ -2,9 +2,11 @@
 
 #include <stdlib.h>
 #include "stm32f303x8.h"
+#include "lib.h"
 #include "printf.h"
 #include "rtos.h"
 #include "flash_driver.h"
+#include "usart_driver.h"
 
 /* ユーザスレッド */
 static int flash(int argc, char *argv[])
@@ -32,9 +34,21 @@ static int flash(int argc, char *argv[])
     return 0;
 }
 
+int Init(void)
+{
+    init_myputc((void (*)(char))UsartWrite);
+    init_mygetc((char (*)(void))UsartRead);
+
+    init_printf(myputc);
+
+    return 0;
+}
+
 int main(void)
     __attribute__ ((section (".entry_point")));
-int main(void){  
+int main(void)
+{  
+    Init();
 
     printf((char*)"main boot succeed!\n");  
 
@@ -54,4 +68,3 @@ int main(void){
     /* ここには戻ってこない */  
     return 0;
 }
-

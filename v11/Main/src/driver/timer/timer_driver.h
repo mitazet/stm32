@@ -1,17 +1,7 @@
 #ifndef __TIMER_DRIVER__
 #define __TIMER_DRIVER__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "stm32f303x8.h"
-
-extern void TIM6_DAC1_IRQHandler(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 class TimerDriver
 {
@@ -22,10 +12,10 @@ class TimerDriver
         void Init(void);
 
         // add timer counting by seconds
-        int Add_sec(int timeout_sec, void (*function)(void));
+        int Start_sec(int timeout_sec, void (*function)(void));
 
         // add timer counting by milliseconds
-        int Add_msec(int timeout_msec, void (*function)(void));
+        int Start_msec(int timeout_msec, void (*function)(void));
 
         // cancel timer
         void Cancel(void);

@@ -95,7 +95,7 @@ TEST_F(TimerTest, Init)
     EXPECT_EQ(NULL, TimerTimeupFunction);
 }
 
-TEST_F(TimerTest, Add_sec)
+TEST_F(TimerTest, Start_sec)
 {
     EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn));
 
@@ -105,7 +105,7 @@ TEST_F(TimerTest, Add_sec)
 
     //範囲外
     timeout_sec = 81;
-    EXPECT_EQ(-1, TimerDrv->Add_sec(timeout_sec, dummy_function));
+    EXPECT_EQ(-1, TimerDrv->Start_sec(timeout_sec, dummy_function));
 
     EXPECT_EQ(0, virtualRCC->APB1ENR & RCC_APB1ENR_TIM6EN);
     EXPECT_EQ(0, virtualTIM->PSC);
@@ -119,7 +119,7 @@ TEST_F(TimerTest, Add_sec)
     timeout_sec = 80;
     EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn));
 
-    EXPECT_EQ(0, TimerDrv->Add_sec(timeout_sec, dummy_function));
+    EXPECT_EQ(0, TimerDrv->Start_sec(timeout_sec, dummy_function));
 
     EXPECT_EQ(RCC_APB1ENR_TIM6EN, virtualRCC->APB1ENR & RCC_APB1ENR_TIM6EN);
     EXPECT_EQ(9999, virtualTIM->PSC);
@@ -130,7 +130,7 @@ TEST_F(TimerTest, Add_sec)
     EXPECT_EQ((void*)dummy_function, (void*)TimerTimeupFunction);
 }
 
-TEST_F(TimerTest, Add_msec)
+TEST_F(TimerTest, Start_msec)
 {
     EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn));
 
@@ -140,7 +140,7 @@ TEST_F(TimerTest, Add_msec)
 
     //範囲外
     timeout_msec = 8001;
-    EXPECT_EQ(-1, TimerDrv->Add_msec(timeout_msec, dummy_function));
+    EXPECT_EQ(-1, TimerDrv->Start_msec(timeout_msec, dummy_function));
 
     EXPECT_EQ(0, virtualRCC->APB1ENR & RCC_APB1ENR_TIM6EN);
     EXPECT_EQ(0, virtualTIM->PSC);
@@ -154,7 +154,7 @@ TEST_F(TimerTest, Add_msec)
     timeout_msec = 8000;
     EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn));
 
-    EXPECT_EQ(0, TimerDrv->Add_msec(timeout_msec, dummy_function));
+    EXPECT_EQ(0, TimerDrv->Start_msec(timeout_msec, dummy_function));
 
     EXPECT_EQ(RCC_APB1ENR_TIM6EN, virtualRCC->APB1ENR & RCC_APB1ENR_TIM6EN);
     EXPECT_EQ(999, virtualTIM->PSC);
@@ -172,7 +172,7 @@ TEST_F(TimerTest, Cancel)
 
     //Set msec
     EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn));
-    TimerDrv->Add_msec(8000, dummy_function);
+    TimerDrv->Start_msec(8000, dummy_function);
 
     //Cancel
     EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn));
@@ -188,7 +188,7 @@ TEST_F(TimerTest, Cancel)
 
     //Set sec
     EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn));
-    TimerDrv->Add_msec(80, dummy_function);
+    TimerDrv->Start_msec(80, dummy_function);
 
     //Cancel
     EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn));
