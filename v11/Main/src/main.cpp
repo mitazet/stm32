@@ -7,6 +7,8 @@
 #include "rtos.h"
 #include "flash_driver.h"
 #include "usart_driver.h"
+#include "led_driver.h"
+#include "timer0_driver.h"
 
 /* ユーザスレッド */
 static int flash(int argc, char *argv[])
@@ -34,6 +36,12 @@ static int flash(int argc, char *argv[])
     return 0;
 }
 
+static int Led(int argc, char *argv[])
+{
+    LedDriver& LedDrv = LedDriver::GetInstance();
+    LedDrv.Init();
+}
+
 int Init(void)
 {
     init_myputc((void (*)(char))UsartWrite);
@@ -52,7 +60,7 @@ int main(void)
 
     printf((char*)"main boot succeed!\n");  
 
-    SysTick_Config(SystemCoreClock/10); // 1/10秒（=100ms）ごとにSysTick割り込み
+    SysTick_Config(SystemCoreClock/10);     // 1/10秒（=100ms）ごとにSysTick割り込み
     NVIC_SetPriority(SVCall_IRQn, 0x80);    // SVCの優先度は中ほど
     NVIC_SetPriority(SysTick_IRQn, 0xc0);   // SysTickの優先度はSVCより低く
     NVIC_SetPriority(PendSV_IRQn, 0xff);    // PendSVの優先度を最低にしておく

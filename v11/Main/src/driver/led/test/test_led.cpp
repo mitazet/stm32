@@ -1,13 +1,6 @@
-// テストケース記述ファイル
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
-
-// テスト対象関数を呼び出せるようにするのだが
-// extern "C"がないとCと解釈されない
-extern "C" {
-#include "usart_driver.h"
-#include "stm32f303x8.h"
-}
+#include "led_driver.h"
 
 using ::testing::_;
 using ::testing::Invoke;
@@ -74,87 +67,61 @@ extern "C" {
     }
 }
 
-RCC_TypeDef *virtualRcc;
-GPIO_TypeDef *virtualGpio;
-USART_TypeDef *virtualUsart;
+RCC_TypeDef *virtualRCC;
+GPIO_TypeDef *virtualGPIO;
+LedDriver& LedDrv = LedDriver::GetInstance();
 
 // fixtureNameはテストケース群をまとめるグループ名と考えればよい、任意の文字列
 // それ以外のclass～testing::Testまではおまじないと考える
-class UsartTest : public ::testing::Test {
+class LedTest : public ::testing::Test {
     protected:
         // fixtureNameでグループ化されたテストケースはそれぞれのテストケース実行前に
         // この関数を呼ぶ。共通の初期化処理を入れておくとテストコードがすっきりする
         virtual void SetUp()
         {
             mock = new NiceMock<MockIo>();
-            virtualRcc = new RCC_TypeDef();
-            virtualGpio = new GPIO_TypeDef();
-            virtualUsart = new USART_TypeDef();
-            UsartCreate(virtualRcc, virtualGpio, virtualUsart);
+            virtualRCC = new RCC_TypeDef();
+            virtualGPIO = new GPIO_TypeDef();
+            LedDrv.SetBase(virtualRCC, virtualGPIO);
         }
         // SetUpと同様にテストケース実行後に呼ばれる関数。共通後始末を記述する。
         virtual void TearDown()
         {
             delete mock;
-            delete virtualRcc;
-            delete virtualGpio;
-            delete virtualUsart;
+            delete virtualRCC;
+            delete virtualGPIO;
         }
 };
 
 // テストケース
-TEST_F(UsartTest, Init)
+TEST_F(LedTest, Init)
 {
     mock->DelegateToVirtual();
 
-    UsartInit();
+    LedDrv.Init();
 
-    EXPECT_EQ(RCC_AHBENR_GPIOAEN, virtualRcc->AHBENR & RCC_AHBENR_GPIOAEN);
-    EXPECT_EQ(GPIO_MODER_MODER2_1|GPIO_MODER_MODER15_1, virtualGpio->MODER);
-    EXPECT_EQ(0x700, virtualGpio->AFR[0]);
-    EXPECT_EQ(0x70000000, virtualGpio->AFR[1]);
-    EXPECT_EQ(RCC_APB1ENR_USART2EN, virtualRcc->APB1ENR);
-    EXPECT_EQ(8000000L/115200L, virtualUsart->BRR);
-    EXPECT_EQ(USART_CR1_RE|USART_CR1_TE|USART_CR1_UE, virtualUsart->CR1);
+    EXPECT_EQ(virtualRCC->AHBENR & RCC_AHBENR_GPIOBEN_Msk, RCC_AHBENR_GPIOBEN);
+    EXPECT_EQ(virtualGPIO->MODER & GPIO_MODER_MODER3_Msk, GPIO_MODER_MODER3_0);
+    EXPECT_EQ(virtualGPIO->OTYPER & GPIO_OTYPER_OT_3, 0);
+    EXPECT_EQ(virtualGPIO->PUPDR & GPIO_PUPDR_PUPDR3_Msk, 0);
+    EXPECT_EQ(virtualGPIO->ODR & GPIO_ODR_3, 0);
 }
 
-using ::testing::Return;
 
-TEST_F(UsartTest, IsReadEnable)
-{
-    EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_RXNE)).WillOnce(Return(0));
-    EXPECT_EQ(0, UsartIsReadEnable());
-    EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_RXNE)).WillOnce(Return(USART_ISR_RXNE));
-    EXPECT_EQ(USART_ISR_RXNE, UsartIsReadEnable());
-}
-
-TEST_F(UsartTest, IsWriteEnable)
-{
-    EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_TXE)).WillOnce(Return(0));
-    EXPECT_EQ(0, UsartIsWriteEnable());
-    EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_TXE)).WillOnce(Return(USART_ISR_TXE));
-    EXPECT_EQ(USART_ISR_TXE, UsartIsWriteEnable());
-}
-
-TEST_F(UsartTest, Read)
-{
-    EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_RXNE)).WillRepeatedly(Return(0));
-    EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_RXNE)).WillRepeatedly(Return(USART_ISR_RXNE));
-    EXPECT_CALL(*mock, ReadReg(&virtualUsart->RDR)).WillRepeatedly(Return('a'));
-
-    EXPECT_EQ('a', UsartRead());
-}
-
-TEST_F(UsartTest, Write)
+TEST_F(LedTest, On)
 {
     mock->DelegateToVirtual();
 
-    char c = 's';
+    LedDrv.On();
 
-    EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_TXE)).WillRepeatedly(Return(0));
-    EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_TXE)).WillRepeatedly(Return(USART_ISR_TXE));
-    EXPECT_CALL(*mock, WriteReg(&virtualUsart->TDR, c));
+    EXPECT_EQ(virtualGPIO->ODR & GPIO_ODR_3, GPIO_ODR_3);
+}
 
-    UsartWrite(c);
-    EXPECT_EQ(c, virtualUsart->TDR);
+TEST_F(LedTest, Off)
+{
+    mock->DelegateToVirtual();
+
+    LedDrv.Off();
+
+    EXPECT_EQ(virtualGPIO->ODR & GPIO_ODR_3, 0);
 }

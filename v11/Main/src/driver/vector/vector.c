@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 extern void TIM6_DAC1_IRQHandler(void);
+extern void TIM7_DAC2_IRQHandler(void);
 
 void (*vectors[])(void)
     __attribute__ ((section (".app_vector")));
@@ -78,7 +79,7 @@ void (*vectors[])(void) = {
     NULL, // 0
     NULL, // 0
     TIM6_DAC1_IRQHandler, // TIM6_DAC1_IRQHandler
-    NULL, // TIM7_DAC2_IRQHandler
+    TIM7_DAC2_IRQHandler, // TIM7_DAC2_IRQHandler
     NULL, // 0
     NULL, // 0
     NULL, // 0

@@ -2,12 +2,7 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include "flash_driver.h"
-
-// テスト対象関数を呼び出せるようにするのだが
-// extern "C"がないとCと解釈されない
-extern "C" {
 #include "stm32f303x8.h"
-}
 
 using ::testing::_;
 using ::testing::Invoke;
@@ -44,7 +39,9 @@ class MockIo{
         }
 };
 
-MockIo *mock;
+using ::testing::NiceMock;
+
+NiceMock<MockIo> *mock;
 
 extern "C" {
     void SetBit(__IO void* address, uint32_t data){
@@ -86,7 +83,7 @@ class FlashTest : public ::testing::Test {
         // この関数を呼ぶ。共通の初期化処理を入れておくとテストコードがすっきりする
         virtual void SetUp()
         {
-            mock = new MockIo();
+            mock = new NiceMock<MockIo>();
             virtualFlash = new FLASH_TypeDef();
             virtualAddress = new uint8_t[100];
             virtualStart = (uint32_t)&virtualAddress[0];
@@ -125,7 +122,12 @@ TEST_F(FlashTest, ReadOK)
     EXPECT_EQ(0xDE, FlashDrv->Read(&virtualAddress[30]));
 }
 
-TEST_F(FlashTest, ReadNG_ADDR)
+TEST_F(FlashTest, ReadNG_AddrUnder)
+{
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->Read(&virtualAddress[-1]));
+}
+
+TEST_F(FlashTest, ReadNG_AddrOver)
 {
     EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->Read(&virtualAddress[100]));
 }
@@ -173,7 +175,17 @@ TEST_F(FlashTest, WriteNG_EOP)
     EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->Write(dummy, data));
 }
 
-TEST_F(FlashTest, WriteNG_ADDR)
+TEST_F(FlashTest, WriteNG_AddrUnder)
+{
+    mock->DelegateToVirtual();
+
+    uint16_t* dummy = (uint16_t*)&virtualAddress[-1];
+    uint16_t data = 0xBEEF;
+
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->Write(dummy, data));
+}
+
+TEST_F(FlashTest, WriteNG_AddrOver)
 {
     mock->DelegateToVirtual();
 
@@ -222,7 +234,16 @@ TEST_F(FlashTest, PageEraseNG_EOP)
     EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->PageErase(dummy));
 }
 
-TEST_F(FlashTest, PageEraseNG_ADDR)
+TEST_F(FlashTest, PageEraseNG_AddrUnder)
+{
+    mock->DelegateToVirtual();
+
+    uint8_t *dummy = &virtualAddress[-1];
+
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->PageErase(dummy));
+}
+
+TEST_F(FlashTest, PageEraseNG_AddrOver)
 {
     mock->DelegateToVirtual();
 
