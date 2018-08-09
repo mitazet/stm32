@@ -64,7 +64,6 @@ class TimerTest : public ::testing::Test {
             virtualRCC = new RCC_TypeDef();
             virtualTIM = new TIM_TypeDef();
             virtualIRQn = TIM6_DAC1_IRQn;
-
             Timer0 = new Timer0Driver();
         }
         // SetUpと同様にテストケース実行後に呼ばれる関数。共通後始末を記述する。
