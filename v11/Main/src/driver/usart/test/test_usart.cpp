@@ -1,13 +1,8 @@
 // テストケース記述ファイル
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
-
-// テスト対象関数を呼び出せるようにするのだが
-// extern "C"がないとCと解釈されない
-extern "C" {
 #include "usart_driver.h"
 #include "stm32f303x8.h"
-}
 
 using ::testing::_;
 using ::testing::Invoke;
@@ -44,9 +39,7 @@ class MockIo{
         }
 };
 
-using ::testing::NiceMock;
-
-NiceMock<MockIo> *mock;
+MockIo *mock;
 
 extern "C" {
     void SetBit(__IO void* address, uint32_t data){
@@ -77,6 +70,7 @@ extern "C" {
 RCC_TypeDef *virtualRcc;
 GPIO_TypeDef *virtualGpio;
 USART_TypeDef *virtualUsart;
+UsartDriver& UsartDrv = UsartDriver::GetInstance();
 
 // fixtureNameはテストケース群をまとめるグループ名と考えればよい、任意の文字列
 // それ以外のclass～testing::Testまではおまじないと考える
@@ -86,11 +80,11 @@ class UsartTest : public ::testing::Test {
         // この関数を呼ぶ。共通の初期化処理を入れておくとテストコードがすっきりする
         virtual void SetUp()
         {
-            mock = new NiceMock<MockIo>();
+            mock = new MockIo();
             virtualRcc = new RCC_TypeDef();
             virtualGpio = new GPIO_TypeDef();
             virtualUsart = new USART_TypeDef();
-            UsartCreate(virtualRcc, virtualGpio, virtualUsart);
+            UsartDrv.SetBase(virtualRcc, virtualGpio, virtualUsart);
         }
         // SetUpと同様にテストケース実行後に呼ばれる関数。共通後始末を記述する。
         virtual void TearDown()
@@ -107,7 +101,11 @@ TEST_F(UsartTest, Init)
 {
     mock->DelegateToVirtual();
 
-    UsartInit();
+    EXPECT_CALL(*mock, SetBit(_, _)).Times(6); //回数は問題ではないので微妙だがWarningがでるため
+    EXPECT_CALL(*mock, ClearReg(_)).Times(3);
+    EXPECT_CALL(*mock, WriteReg(_, _)).Times(1);
+
+    UsartDrv.Init();
 
     EXPECT_EQ(RCC_AHBENR_GPIOAEN, virtualRcc->AHBENR & RCC_AHBENR_GPIOAEN);
     EXPECT_EQ(GPIO_MODER_MODER2_1|GPIO_MODER_MODER15_1, virtualGpio->MODER);
@@ -123,17 +121,17 @@ using ::testing::Return;
 TEST_F(UsartTest, IsReadEnable)
 {
     EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_RXNE)).WillOnce(Return(0));
-    EXPECT_EQ(0, UsartIsReadEnable());
+    EXPECT_EQ(0, UsartDrv.IsReadEnable());
     EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_RXNE)).WillOnce(Return(USART_ISR_RXNE));
-    EXPECT_EQ(USART_ISR_RXNE, UsartIsReadEnable());
+    EXPECT_EQ(USART_ISR_RXNE, UsartDrv.IsReadEnable());
 }
 
 TEST_F(UsartTest, IsWriteEnable)
 {
     EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_TXE)).WillOnce(Return(0));
-    EXPECT_EQ(0, UsartIsWriteEnable());
+    EXPECT_EQ(0, UsartDrv.IsWriteEnable());
     EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_TXE)).WillOnce(Return(USART_ISR_TXE));
-    EXPECT_EQ(USART_ISR_TXE, UsartIsWriteEnable());
+    EXPECT_EQ(USART_ISR_TXE, UsartDrv.IsWriteEnable());
 }
 
 TEST_F(UsartTest, Read)
@@ -142,7 +140,7 @@ TEST_F(UsartTest, Read)
     EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_RXNE)).WillRepeatedly(Return(USART_ISR_RXNE));
     EXPECT_CALL(*mock, ReadReg(&virtualUsart->RDR)).WillRepeatedly(Return('a'));
 
-    EXPECT_EQ('a', UsartRead());
+    EXPECT_EQ('a', UsartDrv.Read());
 }
 
 TEST_F(UsartTest, Write)
@@ -155,6 +153,6 @@ TEST_F(UsartTest, Write)
     EXPECT_CALL(*mock, ReadBit(&virtualUsart->ISR, USART_ISR_TXE)).WillRepeatedly(Return(USART_ISR_TXE));
     EXPECT_CALL(*mock, WriteReg(&virtualUsart->TDR, c));
 
-    UsartWrite(c);
+    UsartDrv.Write(c);
     EXPECT_EQ(c, virtualUsart->TDR);
 }

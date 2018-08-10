@@ -1,9 +1,21 @@
-#include "timer_base_driver.h"
+#ifndef __TIMER_0_DRIVER__
+#define __TIMER_0_DRIVER__
 
-class Timer0Driver : public TimerBaseDriver
+#include "timer_base_driver.h"
+#include "../base/singleton.h"
+
+class Timer0Driver : public TimerBaseDriver,
+                     public Singleton<Timer0Driver>
 {
     public:
-        Timer0Driver();
+        friend class Singleton<Timer0Driver>;
+
+    public:
         void SetTimeupFunction(void (*function)(void));
         void ClearTimeupFunction(void);
+
+    protected:
+        Timer0Driver();
 };
+
+#endif

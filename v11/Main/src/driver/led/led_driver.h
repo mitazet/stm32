@@ -13,6 +13,7 @@ class LedDriver : public Singleton<LedDriver>
         void Init();
         void On();
         void Off();
+        uint32_t IsOn();
         void SetBase(RCC_TypeDef* rcc_addr = RCC, GPIO_TypeDef* gpio_addr = GPIOB);
 
     private:

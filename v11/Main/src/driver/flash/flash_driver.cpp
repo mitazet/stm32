@@ -5,11 +5,9 @@
 #include "printf.h"
 
 
-
-
 bool FlashDriver::is_area(uint32_t address, uint32_t size)
 {
-    if((address < start_) || (address + size > end_)){
+    if((address < flash_start_) || (address + size > flash_end_)){
         return false;
     }
     return true;
@@ -17,7 +15,7 @@ bool FlashDriver::is_area(uint32_t address, uint32_t size)
 
 bool FlashDriver::is_locked(void)
 {
-    if(ReadBit(&address_->CR, FLASH_CR_LOCK)){
+    if(ReadBit(&flash_base_->CR, FLASH_CR_LOCK)){
         return true;
     }
     return false;
@@ -25,7 +23,7 @@ bool FlashDriver::is_locked(void)
 
 bool FlashDriver::is_busy(void)
 {
-    if(ReadBit(&address_->SR, FLASH_SR_BSY)){
+    if(ReadBit(&flash_base_->SR, FLASH_SR_BSY)){
         return true;
     }
     return false;
@@ -33,39 +31,48 @@ bool FlashDriver::is_busy(void)
 
 flash_result_t FlashDriver::check_eop(void)
 {
-    if(!ReadBit(&address_->SR, FLASH_SR_EOP)){
+    if(!ReadBit(&flash_base_->SR, FLASH_SR_EOP)){
         return FLASH_RESULT_NG;
     }
 
-    ClearBit(&address_->SR, FLASH_SR_EOP);
+    ClearBit(&flash_base_->SR, FLASH_SR_EOP);
 
     return FLASH_RESULT_OK;
 }
 
 void FlashDriver::unlock(void)
 {
-    WriteReg(&address_->KEYR, FLASH_KEY1);
-    WriteReg(&address_->KEYR, FLASH_KEY2);
+    WriteReg(&flash_base_->KEYR, FLASH_KEY1);
+    WriteReg(&flash_base_->KEYR, FLASH_KEY2);
 }
 
 void FlashDriver::write(uint16_t* address, uint16_t data)
 {
-    SetBit(&address_->CR, FLASH_CR_PG);
+    SetBit(&flash_base_->CR, FLASH_CR_PG);
     *address = data;
 }
 
 void FlashDriver::page_erase(uint8_t* address)
 {
-    SetBit(&address_->CR, FLASH_CR_PER);
-    WriteReg(&address_->AR, (uint32_t)address);
-    SetBit(&address_->CR, FLASH_CR_STRT);
+    SetBit(&flash_base_->CR, FLASH_CR_PER);
+    WriteReg(&flash_base_->AR, (uint32_t)address);
+    SetBit(&flash_base_->CR, FLASH_CR_STRT);
 }
 
-FlashDriver::FlashDriver(FLASH_TypeDef* address, uint32_t start, uint32_t end)
+FlashDriver::FlashDriver()
 {
-    address_ = address;
-    start_   = start;
-    end_     = end;
+#ifndef DEBUG_GTEST
+    flash_base_  = FLASH;
+    flash_start_ = _flash_addr;
+    flash_end_   = _flash_addr + _flash_size;
+#endif
+}
+
+void FlashDriver::SetBase(FLASH_TypeDef* address, uint32_t start, uint32_t end)
+{
+    flash_base_  = address;
+    flash_start_ = start;
+    flash_end_   = end;
 }
 
 void FlashDriver::Init(void)
@@ -118,9 +125,4 @@ flash_result_t FlashDriver::PageErase(uint8_t* address)
     while(is_busy());
 
     return check_eop();
-}
-
-flash_result_t FlashDriver::MassErase(void)
-{
-    return FLASH_RESULT_OK;
 }

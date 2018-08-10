@@ -23,13 +23,15 @@ class TimerBaseDriver
         int Start_sec(int timeout_sec, void (*function)(void));
         int Start_msec(int timeout_msec, void (*function)(void));
         void Cancel(void);
+        void SetBase(TimerBase base);
+        static void (*TimeupFunction[TIMER_NUM])(void);
 
     private:
         void StopTimer(void);
         void StartTimer_sec(int timeout_sec);
         void StartTimer_msec(int timeout_msec);
-        void SetTimeupFunction(void (*function)(void)){};
-        void ClearTimeupFunction(void){};
+        virtual void SetTimeupFunction(void (*function)(void)){};
+        virtual void ClearTimeupFunction(void){};
 
     protected:
         TimerBase timer_base_;

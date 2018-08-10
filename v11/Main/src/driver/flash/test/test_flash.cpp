@@ -73,7 +73,7 @@ FLASH_TypeDef *virtualFlash;
 uint8_t* virtualAddress;
 uint32_t virtualStart;
 uint32_t virtualEnd;
-FlashDriver *FlashDrv;
+FlashDriver& FlashDrv = FlashDriver::GetInstance();
 
 // fixtureNameはテストケース群をまとめるグループ名と考えればよい、任意の文字列
 // それ以外のclass～testing::Testまではおまじないと考える
@@ -88,7 +88,7 @@ class FlashTest : public ::testing::Test {
             virtualAddress = new uint8_t[100];
             virtualStart = (uint32_t)&virtualAddress[0];
             virtualEnd = (uint32_t)&virtualAddress[100]; // 範囲外のアドレスを取得
-            FlashDrv = new FlashDriver(virtualFlash, virtualStart, virtualEnd);
+            FlashDrv.SetBase(virtualFlash, virtualStart, virtualEnd);
         }
         // SetUpと同様にテストケース実行後に呼ばれる関数。共通後始末を記述する。
         virtual void TearDown()
@@ -107,7 +107,7 @@ TEST_F(FlashTest, Init)
     EXPECT_CALL(*mock, WriteReg(&virtualFlash->KEYR, FLASH_KEY1));
     EXPECT_CALL(*mock, WriteReg(&virtualFlash->KEYR, FLASH_KEY2));
 
-    FlashDrv->Init();
+    FlashDrv.Init();
 
     EXPECT_EQ(FLASH_KEY2, virtualFlash->KEYR);
 }
@@ -119,17 +119,17 @@ TEST_F(FlashTest, ReadOK)
 
     virtualAddress[30] = 0xDE;
 
-    EXPECT_EQ(0xDE, FlashDrv->Read(&virtualAddress[30]));
+    EXPECT_EQ(0xDE, FlashDrv.Read(&virtualAddress[30]));
 }
 
 TEST_F(FlashTest, ReadNG_AddrUnder)
 {
-    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->Read(&virtualAddress[-1]));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv.Read(&virtualAddress[-1]));
 }
 
 TEST_F(FlashTest, ReadNG_AddrOver)
 {
-    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->Read(&virtualAddress[100]));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv.Read(&virtualAddress[100]));
 }
 
 using ::testing::Return;
@@ -152,7 +152,7 @@ TEST_F(FlashTest, WriteOK)
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_EOP)).WillOnce(Return(FLASH_SR_EOP));
     EXPECT_CALL(*mock, ClearBit(&virtualFlash->SR, FLASH_SR_EOP));
     
-    EXPECT_EQ(FLASH_RESULT_OK, FlashDrv->Write(dummy, data));
+    EXPECT_EQ(FLASH_RESULT_OK, FlashDrv.Write(dummy, data));
 
     EXPECT_EQ(*dummy, data);
 }
@@ -172,7 +172,7 @@ TEST_F(FlashTest, WriteNG_EOP)
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(0));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_EOP)).WillOnce(Return(0));
     
-    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->Write(dummy, data));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv.Write(dummy, data));
 }
 
 TEST_F(FlashTest, WriteNG_AddrUnder)
@@ -182,7 +182,7 @@ TEST_F(FlashTest, WriteNG_AddrUnder)
     uint16_t* dummy = (uint16_t*)&virtualAddress[-1];
     uint16_t data = 0xBEEF;
 
-    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->Write(dummy, data));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv.Write(dummy, data));
 }
 
 TEST_F(FlashTest, WriteNG_AddrOver)
@@ -192,7 +192,7 @@ TEST_F(FlashTest, WriteNG_AddrOver)
     uint16_t* dummy = (uint16_t*)&virtualAddress[99];
     uint16_t data = 0xBEEF;
 
-    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->Write(dummy, data));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv.Write(dummy, data));
 }
 
 TEST_F(FlashTest, PageEraseOK)
@@ -212,7 +212,7 @@ TEST_F(FlashTest, PageEraseOK)
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_EOP)).WillOnce(Return(FLASH_SR_EOP));
     EXPECT_CALL(*mock, ClearBit(&virtualFlash->SR, FLASH_SR_EOP));
 
-    EXPECT_EQ(FLASH_RESULT_OK, FlashDrv->PageErase(dummy));
+    EXPECT_EQ(FLASH_RESULT_OK, FlashDrv.PageErase(dummy));
 }
 
 TEST_F(FlashTest, PageEraseNG_EOP)
@@ -231,7 +231,7 @@ TEST_F(FlashTest, PageEraseNG_EOP)
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_BSY)).WillRepeatedly(Return(0));
     EXPECT_CALL(*mock, ReadBit(&virtualFlash->SR, FLASH_SR_EOP)).WillOnce(Return(0));
 
-    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->PageErase(dummy));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv.PageErase(dummy));
 }
 
 TEST_F(FlashTest, PageEraseNG_AddrUnder)
@@ -240,7 +240,7 @@ TEST_F(FlashTest, PageEraseNG_AddrUnder)
 
     uint8_t *dummy = &virtualAddress[-1];
 
-    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->PageErase(dummy));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv.PageErase(dummy));
 }
 
 TEST_F(FlashTest, PageEraseNG_AddrOver)
@@ -249,5 +249,5 @@ TEST_F(FlashTest, PageEraseNG_AddrOver)
 
     uint8_t *dummy = &virtualAddress[100];
 
-    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv->PageErase(dummy));
+    EXPECT_EQ(FLASH_RESULT_NG, FlashDrv.PageErase(dummy));
 }

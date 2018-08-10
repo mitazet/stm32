@@ -1,21 +1,32 @@
 #ifndef __USART_DRIVER__
 #define __USART_DRIVER__
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 #include "stm32f303x8.h"
+#include "../base/singleton.h"
 
-extern void UsartCreate(RCC_TypeDef* rcc_addr, GPIO_TypeDef* gpio_addr, USART_TypeDef* usart_addr);
-extern void UsartInit(void);
-extern uint32_t UsartIsReadEnable(void);
-extern uint32_t UsartIsWriteEnable(void);
-extern uint8_t UsartRead(void);
-extern void UsartWrite(uint8_t c);
+class UsartDriver : public Singleton<UsartDriver>
+{
+    public:
+        friend class Singleton<UsartDriver>;
 
-#ifdef __cplusplus
-}
-#endif
+    public:
+        void Init(void);
+        uint32_t IsReadEnable(void);
+        uint32_t IsWriteEnable(void);
+        uint8_t Read(void);
+        void Write(uint8_t c);
+        void SetBase(RCC_TypeDef* rcc_addr, GPIO_TypeDef* gpio_addr, USART_TypeDef* usart_addr);
+
+    private:
+        RCC_TypeDef* rccAddress_;
+        GPIO_TypeDef* gpioAddress_;
+        USART_TypeDef* usartAddress_;
+
+        void EnableUsart2(void);
+        void ConfigureUsart(void);
+
+    protected:
+        UsartDriver();
+};
 
 #endif

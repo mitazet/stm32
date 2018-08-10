@@ -40,3 +40,8 @@ void LedDriver::Off()
 {
     ClearBit(&gpio_base_->ODR, GPIO_ODR_3);
 }
+
+uint32_t LedDriver::IsOn()
+{
+    return ReadBit(&gpio_base_->ODR, GPIO_ODR_3);
+}

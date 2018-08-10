@@ -1,3 +1,6 @@
+#ifndef __SINGLETON_H__
+#define __SINGLETON_H__
+
 template<class T>
 
 class Singleton
@@ -15,3 +18,5 @@ class Singleton
         void operator=(const Singleton& obj) {}
         Singleton(const Singleton &obj) {}
 };
+
+#endif

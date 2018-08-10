@@ -24,7 +24,7 @@ INC_DIRS := $(shell find $(SRC_DIRS) -type d)
 INC_FLAGS := $(addprefix -I, $(INC_DIRS))
 
 CFLAGS := $(INC_FLAGS) -g3 -mcpu=cortex-m4 -mthumb -nostdlib -Os -ffunction-sections -fdata-sections -Wl,--gc-sections -std=c99
-CXXFLAGS := $(INC_FLAGS) -g3 -mcpu=cortex-m4 -mthumb -nostdlib -Os -ffunction-sections -fdata-sections -fno-threadsafe-statics -Wl,--gc-sections -std=c++11
+CXXFLAGS := $(INC_FLAGS) -g3 -mcpu=cortex-m4 -mthumb -nostdlib -Os -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -Wl,--gc-sections -std=c++11
 
 MEMORYMAP := STM32F303K8.ld
 LDFLAGS := -T $(SRC_DIRS)/$(MEMORYMAP)

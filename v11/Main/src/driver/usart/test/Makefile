@@ -21,7 +21,7 @@ $(BUILD_DIR)/$(TEST_NAME): $(TEST_SRC) $(BUILD_DIR)/$(OBJS)
 
 $(BUILD_DIR)/$(OBJS): $(SRCS)
 	$(MKDIR_P) $(dir $@)
-	gcc $(INC_FLAGS) -o $@ -c $< -D DEBUG_GTEST
+	g++ $(INC_FLAGS) -o $@ -c $< -D DEBUG_GTEST
 
 .PHONY: clean
 
