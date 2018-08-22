@@ -10,6 +10,12 @@ typedef enum{
     TIMER_NUM,
 }TimerId;
 
+typedef enum{
+    TIMER_OK,
+    TIMER_OUT_OF_RANGE,
+    TIMER_ILLEGAL_ID,
+}timer_result_t;
+
 typedef struct{
     RCC_TypeDef *rcc;
     TIM_TypeDef *timer;
@@ -25,9 +31,9 @@ class TimerDriver : public Singleton<TimerDriver>
 
     public:
         void Init(void);
-        int Add_sec(TimerId id, int timeout_sec, void (*function)(void));
-        int Add_msec(TimerId id, int timeout_msec, void (*function)(void));
-        void Delete(TimerId id);
+        timer_result_t Add_sec(TimerId id, int timeout_sec, void (*function)(void));
+        timer_result_t Add_msec(TimerId id, int timeout_msec, void (*function)(void));
+        timer_result_t Delete(TimerId id);
         void SetBase(TimerBase base);
         static void (*TimeupFunction[TIMER_NUM])(void);
 

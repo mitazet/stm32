@@ -43,14 +43,14 @@ void TimerDriver::Init(void)
 }
 
 // start timer counting by seconds
-int TimerDriver::Add_sec(TimerId id, int timeout_sec, void (*function)(void))
+timer_result_t TimerDriver::Add_sec(TimerId id, int timeout_sec, void (*function)(void))
 {
     if(id >= TIMER_NUM){
-        return -1;
+        return TIMER_ILLEGAL_ID;
     }
 
     if(timeout_sec > 80){
-        return -1;
+        return TIMER_OUT_OF_RANGE;
     }
 
     SetBase(timer_def[id]);
@@ -59,18 +59,18 @@ int TimerDriver::Add_sec(TimerId id, int timeout_sec, void (*function)(void))
     NVIC_EnableIRQ(timer_base_.irq_num);
     StartTimer_sec(timeout_sec);
 
-    return 0;
+    return TIMER_OK;
 }
 
 // start timer counting by milliseconds
-int TimerDriver::Add_msec(TimerId id, int timeout_msec, void (*function)(void))
+timer_result_t TimerDriver::Add_msec(TimerId id, int timeout_msec, void (*function)(void))
 {
     if(id >= TIMER_NUM){
-        return -1;
+        return TIMER_ILLEGAL_ID;
     }
 
     if(timeout_msec > 8000){
-        return -1;
+        return TIMER_OUT_OF_RANGE;
     }
 
     SetBase(timer_def[id]);
@@ -79,14 +79,14 @@ int TimerDriver::Add_msec(TimerId id, int timeout_msec, void (*function)(void))
     NVIC_EnableIRQ(timer_base_.irq_num);
     StartTimer_msec(timeout_msec);
 
-    return 0;
+    return TIMER_OK;
 }
 
 // cancel timer
-void TimerDriver::Delete(TimerId id)
+timer_result_t TimerDriver::Delete(TimerId id)
 {
     if(id >= TIMER_NUM){
-        return;
+        return TIMER_ILLEGAL_ID;
     }
 
     SetBase(timer_def[id]);
@@ -94,6 +94,8 @@ void TimerDriver::Delete(TimerId id)
     StopTimer();
     NVIC_DisableIRQ(timer_base_.irq_num);
     ClearTimeupFunction(id);
+
+    return TIMER_OK;
 }
 
 void TimerDriver::StopTimer(void)
