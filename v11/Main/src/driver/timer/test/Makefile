@@ -23,11 +23,11 @@ $(BUILD_DIR)/$(TEST_NAME): $(OBJS)
 
 $(BUILD_DIR)/%.cpp.o: %.cpp 
 	$(MKDIR_P) $(dir $@)
-	g++ $(INC_FLAGS) $(TEST_INC) -o $@ -c $< -D DEBUG_GTEST
+	g++ $(INC_FLAGS) $(TEST_INC) -o $@ -c $< -D DEBUG_GTEST -std=c++11
 
 $(BUILD_DIR)/%.cpp.o: $(SRC_DIRS)/%.cpp 
 	$(MKDIR_P) $(dir $@)
-	g++ $(INC_FLAGS) $(TEST_INC) -o $@ -c $< -D DEBUG_GTEST
+	g++ $(INC_FLAGS) $(TEST_INC) -o $@ -c $< -D DEBUG_GTEST -std=c++11
 
 .PHONY: clean
 

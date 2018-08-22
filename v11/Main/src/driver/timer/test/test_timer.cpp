@@ -1,8 +1,7 @@
 // テストケース記述ファイル
 #include "gtest/gtest.h" 
 #include "gmock/gmock.h"
-#include "timer0_driver.h"
-#include "timer1_driver.h"
+#include "timer_driver.h"
 #include "stm32f303x8.h"
 
 using ::testing::_;
@@ -44,203 +43,205 @@ extern "C" {
     void dummy_function(void){
     }
 }
+extern TimerBase timer_def[TIMER_NUM];
 
-RCC_TypeDef *virtualRCC[TIMER_NUM];
+RCC_TypeDef *virtualRCC;
 TIM_TypeDef *virtualTIM[TIMER_NUM];
-uint32_t enable_bit[TIMER_NUM] = {RCC_APB1ENR_TIM6EN, RCC_APB1ENR_TIM7EN};
+uint32_t clk_en[TIMER_NUM] = {RCC_APB1ENR_TIM6EN, RCC_APB1ENR_TIM7EN};
 IRQn_Type virtualIRQn[TIMER_NUM] = {TIM6_DAC1_IRQn, TIM7_DAC2_IRQn};
-TimerBase base[TIMER_NUM];
-Timer0Driver& Timer0 = Timer0Driver::GetInstance();
-Timer1Driver& Timer1 = Timer1Driver::GetInstance();
 
 // fixtureNameはテストケース群をまとめるグループ名と考えればよい、任意の文字列
 // それ以外のclass～testing::Testまではおまじないと考える
-class Timer0Test : public ::testing::Test {
+class TimerTest : public ::testing::Test {
+    public:
+        TimerDriver& TimerDrv = TimerDriver::GetInstance();
+
     protected:
         // fixtureNameでグループ化されたテストケースはそれぞれのテストケース実行前に
         // この関数を呼ぶ。共通の初期化処理を入れておくとテストコードがすっきりする
         virtual void SetUp()
         {
             mock = new Mock();
+            virtualRCC = new RCC_TypeDef();
 
             for(int i=0; i<TIMER_NUM; i++){
-                virtualRCC[i] = new RCC_TypeDef();
                 virtualTIM[i] = new TIM_TypeDef();
-                base[i] = {virtualRCC[i], virtualTIM[i], enable_bit[i], virtualIRQn[i]};
+                timer_def[i] = {virtualRCC, virtualTIM[i], clk_en[i], virtualIRQn[i]};
             }
-
-            Timer0.SetBase(base[TIMER_0]);
-            Timer1.SetBase(base[TIMER_1]);
         }
         // SetUpと同様にテストケース実行後に呼ばれる関数。共通後始末を記述する。
         virtual void TearDown()
         {
             delete mock;
-            delete virtualRCC[TIMER_0];
-            delete virtualRCC[TIMER_1];
-            delete virtualTIM[TIMER_0];
-            delete virtualTIM[TIMER_1];
+            delete virtualRCC;
+            delete virtualTIM[TIMER_6];
+            delete virtualTIM[TIMER_7];
         }
 };
 
 // テストケース
-TEST_F(Timer0Test, Init)
+TEST_F(TimerTest, Init)
 {
-    TimerId id = TIMER_0;
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_6]));
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_7]));
 
-    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
+    TimerDrv.Init();
 
-    Timer0.Init();
-
-    EXPECT_EQ(0, virtualRCC[id]->APB1ENR & RCC_APB1ENR_TIM6EN);
-    EXPECT_EQ(0, virtualTIM[id]->PSC);
-    EXPECT_EQ(0, virtualTIM[id]->ARR);
-    EXPECT_EQ(0, virtualTIM[id]->CNT);
-    EXPECT_EQ(0, virtualTIM[id]->CR1 & TIM_CR1_CEN);
-    EXPECT_EQ(0, virtualTIM[id]->DIER & TIM_DIER_UIE);
-    EXPECT_EQ(NULL, Timer0Driver::TimeupFunction[id]);
+    for(uint32_t id = 0; id < TIMER_NUM; id++){
+        EXPECT_EQ(0, virtualRCC->APB1ENR & clk_en[id]);
+        EXPECT_EQ(0, virtualTIM[id]->PSC);
+        EXPECT_EQ(0, virtualTIM[id]->ARR);
+        EXPECT_EQ(0, virtualTIM[id]->CNT);
+        EXPECT_EQ(0, virtualTIM[id]->CR1 & TIM_CR1_CEN);
+        EXPECT_EQ(0, virtualTIM[id]->DIER & TIM_DIER_UIE);
+        EXPECT_EQ(NULL, TimerDriver::TimeupFunction[id]);
+    }
 }
 
-TEST_F(Timer0Test, Start_sec_NG)
+TEST_F(TimerTest, Add_sec_NG)
 {
-    TimerId id = TIMER_0;
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_6]));
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_7]));
 
-    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
-
-    Timer0.Init();
-
-    int timeout_sec;
+    TimerDrv.Init();
 
     //範囲外
-    timeout_sec = 81;
-    EXPECT_EQ(-1, Timer0.Start_sec(timeout_sec, dummy_function));
+    int timeout_sec = 81;
+    for(int id = 0; id < TIMER_NUM; id++){
 
-    EXPECT_EQ(0, virtualRCC[id]->APB1ENR & RCC_APB1ENR_TIM6EN);
-    EXPECT_EQ(0, virtualTIM[id]->PSC);
-    EXPECT_EQ(0, virtualTIM[id]->ARR);
-    EXPECT_EQ(0, virtualTIM[id]->CNT);
-    EXPECT_EQ(0, virtualTIM[id]->CR1 & TIM_CR1_CEN);
-    EXPECT_EQ(0, virtualTIM[id]->DIER & TIM_DIER_UIE);
-    EXPECT_EQ(NULL, Timer0Driver::TimeupFunction[id]);
+        EXPECT_EQ(-1, TimerDrv.Add_sec((TimerId)id, timeout_sec, dummy_function));
+
+        EXPECT_EQ(0, virtualRCC->APB1ENR & clk_en[id]);
+        EXPECT_EQ(0, virtualTIM[id]->PSC);
+        EXPECT_EQ(0, virtualTIM[id]->ARR);
+        EXPECT_EQ(0, virtualTIM[id]->CNT);
+        EXPECT_EQ(0, virtualTIM[id]->CR1 & TIM_CR1_CEN);
+        EXPECT_EQ(0, virtualTIM[id]->DIER & TIM_DIER_UIE);
+        EXPECT_EQ(NULL, TimerDriver::TimeupFunction[id]);
+    }
 }
 
-TEST_F(Timer0Test, Start_sec_OK)
+TEST_F(TimerTest, Add_sec_OK)
 {
-    TimerId id = TIMER_0;
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_6]));
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_7]));
 
-    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
-
-    Timer0.Init();
-
-    int timeout_sec;
+    TimerDrv.Init();
 
     //範囲内
-    timeout_sec = 80;
-    EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn[id]));
+    int timeout_sec = 80;
 
-    EXPECT_EQ(0, Timer0.Start_sec(timeout_sec, dummy_function));
+    for(uint32_t id = 0; id < TIMER_NUM; id++){
+        EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn[id]));
 
-    EXPECT_EQ(RCC_APB1ENR_TIM6EN, virtualRCC[id]->APB1ENR & RCC_APB1ENR_TIM6EN);
-    EXPECT_EQ(9999, virtualTIM[id]->PSC);
-    EXPECT_EQ(800 * timeout_sec, virtualTIM[id]->ARR);
-    EXPECT_EQ(0, virtualTIM[id]->CNT);
-    EXPECT_EQ(TIM_CR1_CEN, virtualTIM[id]->CR1 & TIM_CR1_CEN);
-    EXPECT_EQ(TIM_DIER_UIE, virtualTIM[id]->DIER & TIM_DIER_UIE);
-    EXPECT_EQ((void*)dummy_function, (void*)Timer0Driver::TimeupFunction[id]);
+        EXPECT_EQ(0, TimerDrv.Add_sec((TimerId)id, timeout_sec, dummy_function));
+
+        EXPECT_EQ(clk_en[id], virtualRCC->APB1ENR & clk_en[id]);
+        EXPECT_EQ(9999, virtualTIM[id]->PSC);
+        EXPECT_EQ(800 * timeout_sec, virtualTIM[id]->ARR);
+        EXPECT_EQ(0, virtualTIM[id]->CNT);
+        EXPECT_EQ(TIM_CR1_CEN, virtualTIM[id]->CR1 & TIM_CR1_CEN);
+        EXPECT_EQ(TIM_DIER_UIE, virtualTIM[id]->DIER & TIM_DIER_UIE);
+        EXPECT_EQ((void*)dummy_function, (void*)TimerDriver::TimeupFunction[id]);
+    }
 }
 
-TEST_F(Timer0Test, Start_msec_NG)
+TEST_F(TimerTest, Add_msec_NG)
 {
-    TimerId id = TIMER_0;
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_6]));
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_7]));
 
-    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
-
-    Timer0.Init();
-
-    int timeout_msec;
+    TimerDrv.Init();
 
     //範囲外
-    timeout_msec = 8001;
-    EXPECT_EQ(-1, Timer0.Start_msec(timeout_msec, dummy_function));
+    int timeout_msec = 8001;
+    for(int id = 0; id < TIMER_NUM; id++){
 
-    EXPECT_EQ(0, virtualRCC[id]->APB1ENR & RCC_APB1ENR_TIM6EN);
-    EXPECT_EQ(0, virtualTIM[id]->PSC);
-    EXPECT_EQ(0, virtualTIM[id]->ARR);
-    EXPECT_EQ(0, virtualTIM[id]->CNT);
-    EXPECT_EQ(0, virtualTIM[id]->CR1 & TIM_CR1_CEN);
-    EXPECT_EQ(0, virtualTIM[id]->DIER & TIM_DIER_UIE);
-    EXPECT_EQ(NULL, (void*)Timer0Driver::TimeupFunction[id]);
+        EXPECT_EQ(-1, TimerDrv.Add_msec((TimerId)id, timeout_msec, dummy_function));
+
+        EXPECT_EQ(0, virtualRCC->APB1ENR & clk_en[id]);
+        EXPECT_EQ(0, virtualTIM[id]->PSC);
+        EXPECT_EQ(0, virtualTIM[id]->ARR);
+        EXPECT_EQ(0, virtualTIM[id]->CNT);
+        EXPECT_EQ(0, virtualTIM[id]->CR1 & TIM_CR1_CEN);
+        EXPECT_EQ(0, virtualTIM[id]->DIER & TIM_DIER_UIE);
+        EXPECT_EQ(NULL, TimerDriver::TimeupFunction[id]);
+    }
 }
 
-TEST_F(Timer0Test, Start_msec_OK)
+TEST_F(TimerTest, Add_msec_OK)
 {
-    TimerId id = TIMER_0;
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_6]));
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_7]));
 
-    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
-
-    Timer0.Init();
-
-    int timeout_msec;
+    TimerDrv.Init();
 
     //範囲内
-    timeout_msec = 8000;
-    EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn[id]));
+    int timeout_msec = 8000;
 
-    EXPECT_EQ(0, Timer0.Start_msec(timeout_msec, dummy_function));
+    for(uint32_t id = 0; id < TIMER_NUM; id++){
+        EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn[id]));
 
-    EXPECT_EQ(RCC_APB1ENR_TIM6EN, virtualRCC[id]->APB1ENR & RCC_APB1ENR_TIM6EN);
-    EXPECT_EQ(999, virtualTIM[id]->PSC);
-    EXPECT_EQ(8 * timeout_msec, virtualTIM[id]->ARR);
-    EXPECT_EQ(0, virtualTIM[id]->CNT);
-    EXPECT_EQ(TIM_CR1_CEN, virtualTIM[id]->CR1 & TIM_CR1_CEN);
-    EXPECT_EQ(TIM_DIER_UIE, virtualTIM[id]->DIER & TIM_DIER_UIE);
-    EXPECT_EQ((void*)dummy_function, (void*)Timer0Driver::TimeupFunction[id]);
+        EXPECT_EQ(0, TimerDrv.Add_msec((TimerId)id, timeout_msec, dummy_function));
+
+        EXPECT_EQ(clk_en[id], virtualRCC->APB1ENR & clk_en[id]);
+        EXPECT_EQ(999, virtualTIM[id]->PSC);
+        EXPECT_EQ(8 * timeout_msec, virtualTIM[id]->ARR);
+        EXPECT_EQ(0, virtualTIM[id]->CNT);
+        EXPECT_EQ(TIM_CR1_CEN, virtualTIM[id]->CR1 & TIM_CR1_CEN);
+        EXPECT_EQ(TIM_DIER_UIE, virtualTIM[id]->DIER & TIM_DIER_UIE);
+        EXPECT_EQ((void*)dummy_function, (void*)TimerDriver::TimeupFunction[id]);
+    }
 }
 
-TEST_F(Timer0Test, Cancel_msec)
+TEST_F(TimerTest, Cancel_msec)
 {
-    TimerId id = TIMER_0;
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_6]));
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_7]));
 
-    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
-    Timer0.Init();
+    TimerDrv.Init();
 
-    //Set msec
-    EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn[id]));
-    Timer0.Start_msec(8000, dummy_function);
+    for(uint32_t id = 0; id < TIMER_NUM; id++){
+        //Set msec
+        EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn[id]));
+        TimerDrv.Add_msec((TimerId)id, 8000, dummy_function);
 
-    //Cancel
-    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
+        //Cancel
+        EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
 
-    Timer0.Cancel();
+        TimerDrv.Delete((TimerId)id);
 
-    EXPECT_EQ(0, virtualTIM[id]->PSC);
-    EXPECT_EQ(0, virtualTIM[id]->ARR);
-    EXPECT_EQ(0, virtualTIM[id]->CNT);
-    EXPECT_EQ(0, virtualTIM[id]->CR1 & TIM_CR1_CEN);
-    EXPECT_EQ(0, virtualTIM[id]->DIER & TIM_DIER_UIE);
-    EXPECT_EQ(NULL, (void*)Timer0Driver::TimeupFunction[id]);
+        EXPECT_EQ(0, virtualTIM[id]->PSC);
+        EXPECT_EQ(0, virtualTIM[id]->ARR);
+        EXPECT_EQ(0, virtualTIM[id]->CNT);
+        EXPECT_EQ(0, virtualTIM[id]->CR1 & TIM_CR1_CEN);
+        EXPECT_EQ(0, virtualTIM[id]->DIER & TIM_DIER_UIE);
+        EXPECT_EQ(NULL, (void*)TimerDriver::TimeupFunction[id]);
+    }
 }
 
-TEST_F(Timer0Test, Cancel_sec)
+TEST_F(TimerTest, Cancel_sec)
 {
-    TimerId id = TIMER_0;
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_6]));
+    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[TIMER_7]));
 
-    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
-    Timer0.Init();
+    TimerDrv.Init();
 
-    //Set sec
-    EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn[id]));
-    Timer0.Start_msec(80, dummy_function);
+    for(uint32_t id = 0; id < TIMER_NUM; id++){
+        //Set msec
+        EXPECT_CALL(*mock, NVIC_EnableIRQ(virtualIRQn[id]));
+        TimerDrv.Add_sec((TimerId)id, 80, dummy_function);
 
-    //Cancel
-    EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
+        //Cancel
+        EXPECT_CALL(*mock, NVIC_DisableIRQ(virtualIRQn[id]));
 
-    Timer0.Cancel();
+        TimerDrv.Delete((TimerId)id);
 
-    EXPECT_EQ(0, virtualTIM[id]->PSC);
-    EXPECT_EQ(0, virtualTIM[id]->ARR);
-    EXPECT_EQ(0, virtualTIM[id]->CNT);
-    EXPECT_EQ(0, virtualTIM[id]->CR1 & TIM_CR1_CEN);
-    EXPECT_EQ(0, virtualTIM[id]->DIER & TIM_DIER_UIE);
-    EXPECT_EQ(NULL, (void*)Timer0Driver::TimeupFunction[id]);
+        EXPECT_EQ(0, virtualTIM[id]->PSC);
+        EXPECT_EQ(0, virtualTIM[id]->ARR);
+        EXPECT_EQ(0, virtualTIM[id]->CNT);
+        EXPECT_EQ(0, virtualTIM[id]->CR1 & TIM_CR1_CEN);
+        EXPECT_EQ(0, virtualTIM[id]->DIER & TIM_DIER_UIE);
+        EXPECT_EQ(NULL, (void*)TimerDriver::TimeupFunction[id]);
+    }
 }

@@ -2,9 +2,7 @@
 #include "flash_driver.h"
 #include "usart_driver.h"
 #include "led_driver.h"
-#include "timer0_driver.h"
-#include "timer1_driver.h"
-#include "usart_driver.h"
+#include "timer_driver.h"
 #include "lib.h"
 #include "printf.h"
 #include "rtos.h"
@@ -15,10 +13,9 @@ extern void UsartWrite(uint8_t c);
 int Init(void)
 {
     FlashDriver::GetInstance().Init();
-    UsartDriver::GetInstance().Init();
+    //UsartDriver::GetInstance().Init(); // Initialized in bootloader
     LedDriver::GetInstance().Init();
-    Timer0Driver::GetInstance().Init();
-    Timer1Driver::GetInstance().Init();
+    TimerDriver::GetInstance().Init();
 
     init_myputc((void (*)(char))UsartWrite);
     init_mygetc((char (*)(void))UsartRead);

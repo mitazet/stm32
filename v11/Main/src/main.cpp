@@ -6,8 +6,8 @@
 #include "printf.h"
 #include "rtos.h"
 #include "flash_driver.h"
+#include "timer_driver.h"
 #include "led_driver.h"
-#include "timer0_driver.h"
 #include "init.h"
 
 static void ToggleLed()
@@ -20,10 +20,10 @@ static void ToggleLed()
         LedDrv.On();
     }
 
-    Timer0Driver& Timer0 = Timer0Driver::GetInstance();
+    TimerDriver& TimerDrv = TimerDriver::GetInstance();
 
     int timeout_sec = 3;
-    Timer0.Start_sec(timeout_sec, ToggleLed);
+    TimerDrv.Add_sec(TIMER_6, timeout_sec, ToggleLed);
 }
 
 /* ユーザスレッド */
