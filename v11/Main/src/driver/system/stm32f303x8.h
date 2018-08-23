@@ -424,6 +424,138 @@ typedef struct
 }GPIO_TypeDef;
 
 /**
+ *  * PinConfig enumeration. Defines all possible pin configuration variants.
+ *   */
+enum PinConfig
+{
+    INPUT,                   ///!< input floating
+    INPUT_PULLUP,            ///!< input pull-up
+    INPUT_PULLDOWN,          ///!< input pull-down
+    ANALOG,                  ///!< analog
+
+    OUTPUT,                  ///!< output push-pull
+    OUTPUT_OD,               ///!< output open-drain
+    OUTPUT_OD_PULLUP,        ///!< output open-drain pull-up
+    OUTPUT_OD_PULLDOWN,      ///!< output open-drain pull-down
+    ALT_INPUT,               ///!< alternate function input
+    ALT_INPUT_PULLUP,        ///!< alternate function input with pull-up
+    ALT_INPUT_PULLDOWN,      ///!< alternate function input with pull-down
+    ALT_OUTPUT,              ///!< alternate function output push-pull
+    ALT_OUTPUT_PULLUP,       ///!< alternate function output push-pull pull-up
+    ALT_OUTPUT_PULLDOWN,     ///!< alternate function output push-pull pull-down
+    ALT_OUTPUT_OD,           ///!< alternate function output open-drain
+    ALT_OUTPUT_OD_PULLUP,    ///!< alternate function output open-drain pull-up
+    ALT_OUTPUT_OD_PULLDOWN   ///!< alternate function output open-drain pull-down
+};
+
+typedef enum PinConfig direction;
+
+
+/**
+ *  * PinMode enumeration. Defines all possible values for MODER register.
+ *   */
+enum PinMode
+{
+    MODER_INPUT  = 0,
+    MODER_OUTPUT  = 1,
+    MODER_ALTERNATE  = 2,
+    MODER_ANALOG  = 3
+};
+
+/**
+ *  * PullUpMode enumeration. Defines all possible values for PUPDR register.
+ *   */
+enum PullUpMode
+{
+    PUPDR_NONE  = 0,
+    PUPDR_PULLUP = 1,
+    PUPDR_PULLDOWN = 2
+};
+
+/**
+ *  * PinSpeed enumeration. Defines all possible values for OSPEEDR register.
+ *   */
+enum PinSpeed
+{
+    PIN_SPEED_2MHZ = 0,
+    PIN_SPEED_25MHZ = 1,
+    PIN_SPEED_50MHZ = 2,
+    PIN_SPEED_100MHZ = 3,
+    PIN_SPEED_MASK = 3
+};
+
+/**
+ *  * PinOutputType enumeration. Defines all possible values for OTYPER register.
+ *   */
+enum PinOutputType
+{
+    PUSH_PULL = 0,
+    OPEN_DRAIN = 1
+};
+
+/**
+ *  * PinAltFunction enumeration. Defines all possible arguments for Alternate() function.
+ *   */
+enum PinAltFunction
+{
+    ALT_FUNC_RTC_50Hz  = 0x00,          ///< RTC_50Hz Alternate Function mapping
+    ALT_FUNC_MCO       = 0x00,          ///< MCO (MCO1 and MCO2) Alternate Function mapping
+    ALT_FUNC_TAMPER    = 0x00,          ///< TAMPER (TAMPER_1 and TAMPER_2) Alternate Function mapping
+    ALT_FUNC_SWJ       = 0x00,          ///< SWJ (SWD and JTAG) Alternate Function mapping
+    ALT_FUNC_TRACE     = 0x00,          ///< TRACE Alternate Function mapping
+
+    ALT_FUNC_TIM1      = 0x01,          ///< TIM1 Alternate Function mapping
+    ALT_FUNC_TIM2      = 0x01,          ///< TIM2 Alternate Function mapping
+
+    ALT_FUNC_TIM3      = 0x02,          ///< TIM3 Alternate Function mapping
+    ALT_FUNC_TIM4      = 0x02,          ///< TIM4 Alternate Function mapping
+    ALT_FUNC_TIM5      = 0x02,          ///< TIM5 Alternate Function mapping
+
+    ALT_FUNC_TIM8      = 0x03,          ///< TIM8 Alternate Function mapping
+    ALT_FUNC_TIM9      = 0x03,          ///< TIM9 Alternate Function mapping
+    ALT_FUNC_TIM10     = 0x03,          ///< TIM10 Alternate Function mapping
+    ALT_FUNC_TIM11     = 0x03,          ///< TIM11 Alternate Function mapping
+
+    ALT_FUNC_I2C1      = 0x04,          ///< I2C1 Alternate Function mapping
+    ALT_FUNC_I2C2      = 0x04,          ///< I2C2 Alternate Function mapping
+    ALT_FUNC_I2C3      = 0x04,          ///< I2C3 Alternate Function mapping
+
+    ALT_FUNC_SPI1      = 0x05,          ///< SPI1 Alternate Function mapping
+    ALT_FUNC_SPI2      = 0x05,          ///< SPI2/I2S2 Alternate Function mapping
+
+    ALT_FUNC_SPI3      = 0x06,          ///< SPI3/I2S3 Alternate Function mapping
+
+    ALT_FUNC_USART1    = 0x07,          ///< USART1 Alternate Function mapping
+    ALT_FUNC_USART2    = 0x07,          ///< USART2 Alternate Function mapping
+    ALT_FUNC_USART3    = 0x07,          ///< USART3 Alternate Function mapping
+    ALT_FUNC_I2S3ext   = 0x07,          ///< I2S3ext Alternate Function mapping
+
+    ALT_FUNC_UART4     = 0x08,          ///< UART4 Alternate Function mapping
+    ALT_FUNC_UART5     = 0x08,          ///< UART5 Alternate Function mapping
+    ALT_FUNC_USART6    = 0x08,          ///< USART6 Alternate Function mapping
+
+    ALT_FUNC_CAN1      = 0x09,          ///< CAN1 Alternate Function mapping
+    ALT_FUNC_CAN2      = 0x09,          ///< CAN2 Alternate Function mapping
+    ALT_FUNC_TIM12     = 0x09,          ///< TIM12 Alternate Function mapping
+    ALT_FUNC_TIM13     = 0x09,          ///< TIM13 Alternate Function mapping
+    ALT_FUNC_TIM14     = 0x09,          ///< TIM14 Alternate Function mapping
+
+    ALT_FUNC_OTG_FS    = 0x0A,          ///< OTG_FS with internal transceiver
+    ALT_FUNC_OTG_HS    = 0x0A,          ///< OTG_HS with external transceiver
+    ALT_FUNC_OTG_HS_ULPI = 0x0A,        ///< OTG_HS with external transceiver
+    ALT_FUNC_OTG_HS_FS = 0x0C,          ///< OTG HS configured in FS (with internal transceiver)
+
+    ALT_FUNC_ETH       = 0x0B,          ///< ETHERNET Alternate Function mapping
+
+    ALT_FUNC_FSMC      = 0x0C,          ///< FSMC Alternate Function mapping
+    ALT_FUNC_SDIO      = 0x0C,          ///< SDIO Alternate Function mapping
+
+    ALT_FUNC_DCMI      = 0x0D,          ///< DCMI Alternate Function mapping
+
+    ALT_FUNC_EVENTOUT  = 0x0F           ///< EVENTOUT Alternate Function mapping
+};
+
+/**
   * @brief Operational Amplifier (OPAMP)
   */
 

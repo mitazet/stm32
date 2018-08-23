@@ -3,6 +3,27 @@
 
 #include "stm32f303x8.h"
 #include "../base/singleton.h"
+#include "../gpio/gpio_driver.h"
+
+enum UsartId
+{
+    USART_1,
+    USART_2,
+    USART_3,
+    USART_NUM,
+};
+
+struct GpioPin
+{
+    GPIO_TypeDef*   port;
+    int             no;
+};
+
+struct UsartPin
+{
+    GpioPin         pin;
+    PinAltFunction  alt_func;
+};
 
 class UsartDriver : public Singleton<UsartDriver>
 {
@@ -18,11 +39,13 @@ class UsartDriver : public Singleton<UsartDriver>
         void SetBase(RCC_TypeDef* rcc_addr, GPIO_TypeDef* gpio_addr, USART_TypeDef* usart_addr);
 
     private:
-        RCC_TypeDef* rccAddress_;
-        GPIO_TypeDef* gpioAddress_;
-        USART_TypeDef* usartAddress_;
-
-        void EnableUsart2(void);
+        RCC_TypeDef* rcc_base_;
+        USART_TypeDef* usart_base_;
+        UsartPin rx_;
+        UsartPin tx_;
+        uint32_t clk_en;
+        
+        void EnableUsart(void);
         void ConfigureUsart(void);
 
     protected:

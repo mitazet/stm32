@@ -17,11 +17,11 @@ all : $(BUILD_DIR)/$(TEST_NAME)
 	./$<
 
 $(BUILD_DIR)/$(TEST_NAME): $(TEST_SRC) $(BUILD_DIR)/$(OBJS)
-	g++ -o $@ $< $(INC_FLAGS) $(TEST_INC) -L$(GTEST_DIR)/googlemock/gtest -lgtest -lgtest_main -L$(GTEST_DIR)/googlemock -lgmock -lgmock_main -lpthread $(BUILD_DIR)/$(OBJS) -D DEBUG_GTEST
+	g++ -o $@ $< $(INC_FLAGS) $(TEST_INC) -L$(GTEST_DIR)/googlemock/gtest -lgtest -lgtest_main -L$(GTEST_DIR)/googlemock -lgmock -lgmock_main -lpthread $(BUILD_DIR)/$(OBJS) -D DEBUG_GTEST -std=c++11
 
 $(BUILD_DIR)/$(OBJS): $(SRCS)
 	$(MKDIR_P) $(dir $@)
-	g++ $(INC_FLAGS) -o $@ -c $< -D DEBUG_GTEST
+	g++ $(INC_FLAGS) -o $@ -c $< -D DEBUG_GTEST -std=c++11
 
 .PHONY: clean
 

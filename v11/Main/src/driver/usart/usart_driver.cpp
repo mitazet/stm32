@@ -15,73 +15,86 @@ void UsartWrite(uint8_t c)
 
 UsartDriver::UsartDriver()
 {
-    rccAddress_ = RCC;
-    gpioAddress_ = GPIOA;
-    usartAddress_ = USART2;       
+    rcc_base_ = RCC;
+    usart_base_ = USART2;       
+    tx_={{GPIOA, 2}, ALT_FUNC_USART2};
+    rx_={{GPIOA, 15}, ALT_FUNC_USART2};
+    clk_en = RCC_AHBENR_GPIOAEN;
 }
 
 void UsartDriver::SetBase(RCC_TypeDef* rcc_addr, GPIO_TypeDef* gpio_addr, USART_TypeDef* usart_addr)
 {
-    rccAddress_ = rcc_addr;
-    gpioAddress_ = gpio_addr;
-    usartAddress_ = usart_addr;       
+    rcc_base_ = rcc_addr;
+    usart_base_ = usart_addr;       
+    tx_.pin.port = gpio_addr;
+    rx_.pin.port = gpio_addr;
 }
 
-void UsartDriver::EnableUsart2(void)
+void UsartDriver::EnableUsart(void)
 {
-    SetBit(&rccAddress_->AHBENR, RCC_AHBENR_GPIOAEN);
+    // Enable GPIO Clock
+    SetBit(&rcc_base_->AHBENR, clk_en);
 
-    ClearReg(&gpioAddress_->MODER);
-    ClearReg(&gpioAddress_->AFR[0]);
-    ClearReg(&gpioAddress_->AFR[1]);
+    ClearReg(&tx_.pin.port->MODER);
+    ClearReg(&tx_.pin.port->AFR[0]);
+    ClearReg(&tx_.pin.port->AFR[1]);
 
-    // PA2 and PA15 as AF
-    SetBit(&gpioAddress_->MODER, GPIO_MODER_MODER2_1 | GPIO_MODER_MODER15_1);
+    ClearReg(&rx_.pin.port->MODER);
+    ClearReg(&rx_.pin.port->AFR[0]);
+    ClearReg(&rx_.pin.port->AFR[1]);
 
-    // Select AF7 (USART2) for PA2 and PA15
-    uint32_t val_af7 = 0x7;
-    SetBit(&gpioAddress_->AFR[0], val_af7 << GPIO_AFRL_AFRL2_Pos);
-    SetBit(&gpioAddress_->AFR[1], val_af7 << GPIO_AFRH_AFRH7_Pos);
+    // Tx GPIO as AF 
+    SetBit(&tx_.pin.port->MODER, MODER_ALTERNATE << tx_.pin.no * 2);
+    // Rx GPIO  as AF
+    SetBit(&rx_.pin.port->MODER, MODER_ALTERNATE << rx_.pin.no * 2);
+
+    uint32_t shift_x4;
+    // Select AF7 (USART) for Tx GPIO
+    shift_x4 = (tx_.pin.no % 8) * 4;
+    SetBit(&tx_.pin.port->AFR[tx_.pin.no/8], tx_.alt_func << shift_x4);
+    // Select AF7 (USART) for Rx GPIO
+    shift_x4 = (rx_.pin.no % 8) * 4;
+    SetBit(&rx_.pin.port->AFR[rx_.pin.no/8], rx_.alt_func << shift_x4);
 }
 
 void UsartDriver::ConfigureUsart(void)
 {
     // Distribute clock to USART2
-    SetBit(&rccAddress_->APB1ENR, RCC_APB1ENR_USART2EN);
+    SetBit(&rcc_base_->APB1ENR, RCC_APB1ENR_USART2EN);
 
     // Configure baudrate
-    WriteReg(&usartAddress_->BRR, 8000000L/115200L);
+    WriteReg(&usart_base_->BRR, 8000000L/115200L);
 
     // Eable TX, RX and enable USART
-    SetBit(&usartAddress_->CR1, USART_CR1_RE | USART_CR1_TE | USART_CR1_UE);
+    SetBit(&usart_base_->CR1, USART_CR1_RE | USART_CR1_TE | USART_CR1_UE);
 }
 
 void UsartDriver::Init(void)
 {
-    EnableUsart2();
+    EnableUsart();
     ConfigureUsart();
 }
 
 uint32_t UsartDriver::IsReadEnable(void)
 {
-    return ReadBit(&usartAddress_->ISR, USART_ISR_RXNE);
+    return ReadBit(&usart_base_->ISR, USART_ISR_RXNE);
 }
 
 uint32_t UsartDriver::IsWriteEnable(void)
 {
-    return ReadBit(&usartAddress_->ISR, USART_ISR_TXE);
+    return ReadBit(&usart_base_->ISR, USART_ISR_TXE);
 }
 
 uint8_t UsartDriver::Read(void)
 {
     // Wait for a char on the USART
     while (!IsReadEnable());
-    return ReadReg(&usartAddress_->RDR);
+    return ReadReg(&usart_base_->RDR);
 }
 
 void UsartDriver::Write(uint8_t c)
 {
     // Wait for a char on the USART
     while (!IsWriteEnable());
-    return WriteReg(&usartAddress_->TDR, c);
+    return WriteReg(&usart_base_->TDR, c);
 }

@@ -39,7 +39,9 @@ class MockIo{
         }
 };
 
-MockIo *mock;
+using ::testing::NiceMock;
+
+NiceMock<MockIo> *mock;
 
 extern "C" {
     void SetBit(__IO void* address, uint32_t data){
@@ -67,20 +69,21 @@ extern "C" {
     }
 }
 
-RCC_TypeDef *virtualRcc;
-GPIO_TypeDef *virtualGpio;
-USART_TypeDef *virtualUsart;
-UsartDriver& UsartDrv = UsartDriver::GetInstance();
-
 // fixtureNameはテストケース群をまとめるグループ名と考えればよい、任意の文字列
 // それ以外のclass～testing::Testまではおまじないと考える
 class UsartTest : public ::testing::Test {
+    public:
+        RCC_TypeDef *virtualRcc;
+        GPIO_TypeDef *virtualGpio;
+        USART_TypeDef *virtualUsart;
+        UsartDriver& UsartDrv = UsartDriver::GetInstance();
+
     protected:
         // fixtureNameでグループ化されたテストケースはそれぞれのテストケース実行前に
         // この関数を呼ぶ。共通の初期化処理を入れておくとテストコードがすっきりする
         virtual void SetUp()
         {
-            mock = new MockIo();
+            mock = new NiceMock<MockIo>();
             virtualRcc = new RCC_TypeDef();
             virtualGpio = new GPIO_TypeDef();
             virtualUsart = new USART_TypeDef();
@@ -100,10 +103,6 @@ class UsartTest : public ::testing::Test {
 TEST_F(UsartTest, Init)
 {
     mock->DelegateToVirtual();
-
-    EXPECT_CALL(*mock, SetBit(_, _)).Times(6); //回数は問題ではないので微妙だがWarningがでるため
-    EXPECT_CALL(*mock, ClearReg(_)).Times(3);
-    EXPECT_CALL(*mock, WriteReg(_, _)).Times(1);
 
     UsartDrv.Init();
 
