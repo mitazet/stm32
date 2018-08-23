@@ -3,7 +3,6 @@
 
 #include "stm32f303x8.h"
 #include "../base/singleton.h"
-#include "../gpio/gpio_driver.h"
 
 enum UsartId
 {
