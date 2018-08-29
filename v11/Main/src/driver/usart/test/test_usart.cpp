@@ -43,7 +43,6 @@ using ::testing::NiceMock;
 
 NiceMock<MockIo> *mock;
 
-extern "C" {
     void SetBit(__IO void* address, uint32_t data){
         mock->SetBit(address, data);
     }
@@ -52,8 +51,8 @@ extern "C" {
         mock->ClearBit(address, data);
     }
 
-    void ReadBit(__IO void* address, uint32_t data){
-        mock->ReadBit(address, data);
+    uint32_t ReadBit(__IO void* address, uint32_t data){
+        return mock->ReadBit(address, data);
     }
 
     void ClearReg(__IO void* address){
@@ -67,7 +66,8 @@ extern "C" {
     uint32_t ReadReg(__IO void* address){
         return mock->ReadReg(address);
     }
-}
+
+uint32_t SystemCoreClock = 8000000;
 
 // fixtureNameはテストケース群をまとめるグループ名と考えればよい、任意の文字列
 // それ以外のclass～testing::Testまではおまじないと考える
