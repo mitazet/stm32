@@ -43,29 +43,29 @@ using ::testing::NiceMock;
 
 NiceMock<MockIo> *mock;
 
-    void SetBit(__IO void* address, uint32_t data){
-        mock->SetBit(address, data);
-    }
+void SetBit(__IO void* address, uint32_t data){
+    mock->SetBit(address, data);
+}
 
-    void ClearBit(__IO void* address, uint32_t data){
-        mock->ClearBit(address, data);
-    }
+void ClearBit(__IO void* address, uint32_t data){
+    mock->ClearBit(address, data);
+}
 
-    uint32_t ReadBit(__IO void* address, uint32_t data){
-        return mock->ReadBit(address, data);
-    }
+uint32_t ReadBit(__IO void* address, uint32_t data){
+    return mock->ReadBit(address, data);
+}
 
-    void ClearReg(__IO void* address){
-        mock->ClearReg(address);
-    }
+void ClearReg(__IO void* address){
+    mock->ClearReg(address);
+}
 
-    void WriteReg(__IO void* address, uint32_t data){
-        mock->WriteReg(address, data);
-    }
+void WriteReg(__IO void* address, uint32_t data){
+    mock->WriteReg(address, data);
+}
 
-    uint32_t ReadReg(__IO void* address){
-        return mock->ReadReg(address);
-    }
+uint32_t ReadReg(__IO void* address){
+    return mock->ReadReg(address);
+}
 
 uint32_t SystemCoreClock = 8000000;
 
@@ -104,14 +104,15 @@ TEST_F(UsartTest, Init)
 {
     mock->DelegateToVirtual();
 
-    UsartDrv.Init();
+    uint32_t baudrate = 115200;
+    UsartDrv.Init(baudrate);
 
     EXPECT_EQ(RCC_AHBENR_GPIOAEN, virtualRcc->AHBENR & RCC_AHBENR_GPIOAEN);
     EXPECT_EQ(GPIO_MODER_MODER2_1|GPIO_MODER_MODER15_1, virtualGpio->MODER);
     EXPECT_EQ(0x700, virtualGpio->AFR[0]);
     EXPECT_EQ(0x70000000, virtualGpio->AFR[1]);
     EXPECT_EQ(RCC_APB1ENR_USART2EN, virtualRcc->APB1ENR);
-    EXPECT_EQ(8000000L/115200L, virtualUsart->BRR);
+    EXPECT_EQ(SystemCoreClock/baudrate, virtualUsart->BRR);
     EXPECT_EQ(USART_CR1_RE|USART_CR1_TE|USART_CR1_UE, virtualUsart->CR1);
 }
 

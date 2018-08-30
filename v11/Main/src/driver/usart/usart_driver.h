@@ -108,8 +108,8 @@ class UsartDriver : public Singleton<UsartDriver>
         static USART_TypeDef* usart_base_;
 
     private:
-        typedef UsartPinSet<USART_2> PinSet;
-        typedef UsartTraits<USART_2> Traits;
+        using PinSet = UsartPinSet<USART_2>;
+        using Traits = UsartTraits<USART_2>;
         
         void EnableClocks(void);
         void ConfigurePin(void);
